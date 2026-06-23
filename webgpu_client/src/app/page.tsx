@@ -13,8 +13,7 @@ const RocketScene = dynamic(() => import('@/components/3d/RocketScene'), { ssr: 
 const CesiumMap = dynamic(() => import('@/components/map/CesiumMap'), { ssr: false });
 
 export default function MissionControl() {
-  const connect = useTelemetryStore((state) => state.connect);
-  const disconnect = useTelemetryStore((state) => state.disconnect);
+  const { connect, disconnect, setMissionConfig } = useTelemetryStore();
   const [viewMode, setViewMode] = useState<'3D' | 'MAP'>('3D');
   const [isLaunched, setIsLaunched] = useState(false);
 
@@ -26,7 +25,10 @@ export default function MissionControl() {
 
   const handleIgnition = async (config: MissionConfig) => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || '/api';
+      setMissionConfig(config);
+      const isLocalhost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+      const defaultApiUrl = isLocalhost ? 'http://127.0.0.1:8000/api' : 'https://prakshep-api.onrender.com/api';
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || defaultApiUrl;
       // Post the configuration to the backend
       await fetch(`${apiUrl}/simulation/start`, { 
         method: 'POST',

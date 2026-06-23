@@ -19,14 +19,14 @@ export class PrakshepWebSocket {
 
   constructor() {
     // Dynamically choose URL based on environment.
-    // If NEXT_PUBLIC_WS_URL is set (e.g. wss://prakshep-api.onrender.com/ws/telemetry), it takes absolute priority.
-    // Otherwise, we derive it from the window location (useful for local dev or proxy rewrites).
     if (typeof window !== 'undefined') {
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const host = window.location.host;
-      this.url = process.env.NEXT_PUBLIC_WS_URL || `${protocol}//${host}/ws/telemetry`;
+      const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      const defaultWsUrl = isLocalhost 
+        ? 'ws://127.0.0.1:8000/ws/telemetry' 
+        : 'wss://prakshep-api.onrender.com/ws/telemetry';
+      this.url = process.env.NEXT_PUBLIC_WS_URL || defaultWsUrl;
     } else {
-      this.url = 'ws://127.0.0.1:8000/ws/telemetry'; // SSR fallback
+      this.url = 'wss://prakshep-api.onrender.com/ws/telemetry'; // SSR fallback
     }
   }
 

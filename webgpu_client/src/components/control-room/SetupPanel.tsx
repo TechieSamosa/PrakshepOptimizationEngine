@@ -14,14 +14,21 @@ export interface MissionConfig {
   payloadMass: number;
   targetOrbit: string;
   weatherProfile: string;
+  targetAltitude: number;
+  targetInclination: number;
+  relandingLocation: string;
 }
 
 const VEHICLES = [
   { id: 'PSLV-XL', name: 'PSLV-XL (6 Strap-ons)', agency: 'ISRO' },
   { id: 'GSLV-MK2', name: 'GSLV Mk II', agency: 'ISRO' },
   { id: 'LVM3', name: 'LVM3', agency: 'ISRO' },
-  { id: 'FALCON-9', name: 'Falcon 9', agency: 'SpaceX' },
+  { id: 'SSLV', name: 'SSLV', agency: 'ISRO' },
+  { id: 'HSLV', name: 'HSLV', agency: 'ISRO' },
+  { id: 'NGLV', name: 'NGLV', agency: 'ISRO' },
+  { id: 'VIKRAM', name: 'Vikram I', agency: 'Skyroot' },
   { id: 'AGNIBAAN', name: 'Agnibaan', agency: 'Agnikul' },
+  { id: 'FALCON-9', name: 'Falcon 9 Block 5', agency: 'SpaceX' },
 ];
 
 const PADS = [
@@ -31,7 +38,8 @@ const PADS = [
 ];
 
 const ORBITS = ['LEO (Low Earth Orbit)', 'SSO (Sun-Synchronous)', 'GTO (Geosynchronous Transfer)'];
-const WEATHER = ['Nominal', 'High Wind Shear', 'High Atmospheric Density Perturbation'];
+const WEATHER = ['Nominal', 'High Wind Shear', 'High Atmospheric Density Perturbation', 'Predictive Model (Live API)', 'Predictive Model (Future Date)'];
+const RELANDING = ['Expendable (No Landing)', 'ASDS (Drone Ship - Bay of Bengal)', 'LZ-1 (SDSC-SHAR Pad 4)', 'LZ-2 (Kulashekarapatnam)'];
 
 export default function SetupPanel({ onInitialize }: SetupPanelProps) {
   const [config, setConfig] = useState<MissionConfig>({
@@ -40,6 +48,9 @@ export default function SetupPanel({ onInitialize }: SetupPanelProps) {
     payloadMass: 1750,
     targetOrbit: 'SSO (Sun-Synchronous)',
     weatherProfile: 'Nominal',
+    targetAltitude: 500,
+    targetInclination: 97.4,
+    relandingLocation: 'Expendable (No Landing)',
   });
 
   return (
@@ -55,10 +66,10 @@ export default function SetupPanel({ onInitialize }: SetupPanelProps) {
           <div className="w-4 h-4 rounded-full bg-red-500 animate-pulse shadow-[0_0_10px_red]" />
         </div>
 
-        {/* Form Body */}
-        <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-8">
+        {/* Form Body - Scrollable to fit all elements */}
+        <div className="p-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-h-[70vh] overflow-y-auto custom-scrollbar">
           
-          {/* Left Column */}
+          {/* Column 1: Vehicle & Pad */}
           <div className="space-y-6">
             
             <div>
@@ -109,7 +120,76 @@ export default function SetupPanel({ onInitialize }: SetupPanelProps) {
 
           </div>
 
-          {/* Right Column */}
+          {/* Column 2: Payload & Orbit */}
+          <div className="space-y-6">
+            
+            <div>
+              <label className="flex items-center text-xs font-bold text-cyan-400 uppercase tracking-widest mb-3">
+                <Database size={14} className="mr-2" /> Payload Mass (kg)
+              </label>
+              <div className="bg-[#000022] border border-gray-800 rounded-lg p-4">
+                <div className="flex justify-between items-center mb-4">
+                  <span className="text-3xl font-mono font-bold text-white">{config.payloadMass}</span>
+                  <span className="text-xs font-mono text-gray-500">KILOGRAMS</span>
+                </div>
+                <input 
+                  type="range" 
+                  min="0" 
+                  max="50000" 
+                  step="50"
+                  value={config.payloadMass}
+                  onChange={(e) => setConfig({ ...config, payloadMass: parseInt(e.target.value) })}
+                  className="w-full accent-cyan-400 h-2 bg-gray-800 rounded-lg appearance-none cursor-pointer"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="flex items-center text-xs font-bold text-cyan-400 uppercase tracking-widest mb-3">
+                <Rocket size={14} className="mr-2" /> Target Orbit Preset
+              </label>
+              <div className="grid grid-cols-1 gap-2">
+                {ORBITS.map((orbit) => (
+                  <button
+                    key={orbit}
+                    onClick={() => setConfig({ ...config, targetOrbit: orbit })}
+                    className={clsx(
+                      "w-full text-left px-4 py-3 border rounded-lg text-sm font-bold transition-all duration-200",
+                      config.targetOrbit === orbit 
+                        ? "bg-cyan-900/30 border-cyan-400 text-white shadow-[0_0_15px_rgba(0,255,255,0.2)]" 
+                        : "border-gray-800 text-gray-400 hover:border-gray-600 hover:text-gray-200"
+                    )}
+                  >
+                    {orbit}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs font-bold text-cyan-400 uppercase tracking-widest mb-2 block">Altitude (km)</label>
+                <input 
+                  type="number" 
+                  value={config.targetAltitude} 
+                  onChange={(e) => setConfig({...config, targetAltitude: parseFloat(e.target.value)})}
+                  className="w-full bg-[#000022] border border-gray-800 text-white font-mono p-2 rounded outline-none focus:border-cyan-400"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-cyan-400 uppercase tracking-widest mb-2 block">Inclination (°)</label>
+                <input 
+                  type="number" 
+                  value={config.targetInclination} 
+                  onChange={(e) => setConfig({...config, targetInclination: parseFloat(e.target.value)})}
+                  className="w-full bg-[#000022] border border-gray-800 text-white font-mono p-2 rounded outline-none focus:border-cyan-400"
+                />
+              </div>
+            </div>
+
+          </div>
+
+          {/* Column 3: Advanced Environment & Landing */}
           <div className="space-y-6">
             
             <div>
@@ -166,6 +246,28 @@ export default function SetupPanel({ onInitialize }: SetupPanelProps) {
               >
                 {WEATHER.map(w => <option key={w} value={w}>{w}</option>)}
               </select>
+            </div>
+
+            <div>
+              <label className="flex items-center text-xs font-bold text-cyan-400 uppercase tracking-widest mb-3 mt-8">
+                <MapPin size={14} className="mr-2" /> Relanding Trajectory Target
+              </label>
+              <div className="space-y-2">
+                {RELANDING.map((loc) => (
+                  <button
+                    key={loc}
+                    onClick={() => setConfig({ ...config, relandingLocation: loc })}
+                    className={clsx(
+                      "w-full flex justify-between items-center px-4 py-3 border rounded-lg text-sm transition-all duration-200",
+                      config.relandingLocation === loc 
+                        ? "bg-amber-900/40 border-amber-500 text-white shadow-[0_0_15px_rgba(255,176,0,0.2)]" 
+                        : "border-gray-800 text-gray-400 hover:border-gray-600 hover:text-gray-200"
+                    )}
+                  >
+                    <span className="font-bold">{loc}</span>
+                  </button>
+                ))}
+              </div>
             </div>
 
           </div>

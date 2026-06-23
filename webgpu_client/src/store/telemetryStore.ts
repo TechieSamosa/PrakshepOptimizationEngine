@@ -33,13 +33,15 @@ interface TelemetryState {
   history: TelemetryFrame[];
   status: ConnectionStatus;
   isConnected: boolean;
+  missionConfig: any | null;
   connect: () => void;
   disconnect: () => void;
+  setMissionConfig: (config: any) => void;
 }
 
-export const useTelemetryStore = create<TelemetryState>((set, get) => {
+export const useTelemetryStore = create<TelemetryState>((set) => {
   // Bind external websocket events to store state
-  wsClient.addStatusHandler((status) => {
+  wsClient.addStatusHandler((status: ConnectionStatus) => {
     set({ status, isConnected: status === 'CONNECTED' });
   });
 
@@ -59,6 +61,7 @@ export const useTelemetryStore = create<TelemetryState>((set, get) => {
     history: [],
     status: wsClient.status,
     isConnected: wsClient.status === 'CONNECTED',
+    missionConfig: null,
     
     connect: () => {
       wsClient.connect();
@@ -67,6 +70,10 @@ export const useTelemetryStore = create<TelemetryState>((set, get) => {
     disconnect: () => {
       wsClient.disconnect();
       set({ data: null, history: [] });
+    },
+
+    setMissionConfig: (config: any) => {
+      set({ missionConfig: config });
     }
   };
 });

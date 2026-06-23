@@ -10,18 +10,17 @@ function Rocket() {
   const meshRef = useRef<THREE.Group>(null);
   const exhaustRef = useRef<THREE.Points>(null);
   const data = useTelemetryStore((state) => state.data);
+  const missionConfig = useTelemetryStore((state) => state.missionConfig);
+  const vehicle = missionConfig?.vehicle || 'PSLV-XL';
+  const stage = data ? data.current_stage : 0;
 
   // Update rocket attitude (pitch, yaw, roll)
   useFrame(() => {
     if (!meshRef.current || !data) return;
-    
-    // Smooth interpolation could be used, but 60Hz is fast enough for direct assignment
-    // Convert degrees to radians for THREE.js
     meshRef.current.rotation.x = THREE.MathUtils.degToRad(data.pitch);
     meshRef.current.rotation.y = THREE.MathUtils.degToRad(data.yaw);
     meshRef.current.rotation.z = THREE.MathUtils.degToRad(data.roll);
     
-    // Dynamic exhaust scaling based on throttle and dynamic pressure
     if (exhaustRef.current) {
       const thrustScale = (data.thrust > 0 ? 1 : 0) * (1 - (data.dynamic_pressure / 100000));
       exhaustRef.current.scale.setScalar(Math.max(0.1, thrustScale));
@@ -30,48 +29,110 @@ function Rocket() {
 
   return (
     <group ref={meshRef}>
-      {/* Central Core (PS1) - 2.8m diameter = 1.4m radius */}
-      <mesh position={[0, 0, 0]}>
-        <cylinderGeometry args={[1.4, 1.4, 20, 32]} />
-        <meshStandardMaterial color="#eeeeee" roughness={0.3} metalness={0.2} />
-      </mesh>
-      {/* Fairing */}
-      <mesh position={[0, 11, 0]}>
-        <coneGeometry args={[1.4, 4, 32]} />
-        <meshStandardMaterial color="#ffffff" roughness={0.2} metalness={0.1} />
-      </mesh>
       
-      {/* PSLV-XL 6 Strap-on solid boosters (PSOM-XL) */}
-      {[0, 60, 120, 180, 240, 300].map((angle, i) => {
-        const rad = THREE.MathUtils.degToRad(angle);
-        const radiusOffset = 1.4 + 0.5 + 0.1; // Core radius + booster radius + gap
-        const x = Math.cos(rad) * radiusOffset;
-        const z = Math.sin(rad) * radiusOffset;
-        return (
-          <group key={i} position={[x, -2, z]}>
-            {/* Booster Body */}
-            <mesh>
-              <cylinderGeometry args={[0.5, 0.5, 12, 16]} />
-              <meshStandardMaterial color="#8B0000" roughness={0.6} metalness={0.1} /> {/* ISRO rust red */}
+      {/* ----------------- PSLV-XL / SSLV / AGNIBAAN ----------------- */}
+      {(vehicle === 'PSLV-XL' || vehicle === 'SSLV' || vehicle === 'AGNIBAAN' || vehicle === 'VIKRAM') && (
+        <>
+          {/* Core Stage */}
+          {stage <= 1 && (
+            <mesh position={[0, -2, 0]}>
+              <cylinderGeometry args={[1.4, 1.4, 16, 32]} />
+              <meshStandardMaterial color="#eeeeee" roughness={0.3} metalness={0.2} />
             </mesh>
-            {/* Booster Nose Cone */}
-            <mesh position={[0, 6.5, 0]}>
-              <coneGeometry args={[0.5, 1, 16]} />
-              <meshStandardMaterial color="#8B0000" roughness={0.6} metalness={0.1} />
+          )}
+          {/* Upper Stages */}
+          {stage <= 3 && (
+            <mesh position={[0, 8, 0]}>
+              <cylinderGeometry args={[1.4, 1.4, 4, 32]} />
+              <meshStandardMaterial color="#d4d4d4" roughness={0.3} metalness={0.2} />
             </mesh>
-            {/* Metallic Nozzle */}
-            <mesh position={[0, -6.5, 0]}>
-              <cylinderGeometry args={[0.3, 0.6, 1, 16]} />
-              <meshStandardMaterial color="#333333" roughness={0.2} metalness={0.9} />
-            </mesh>
-          </group>
-        );
-      })}
+          )}
+          {/* Fairing */}
+          <mesh position={[0, 12, 0]}>
+            <coneGeometry args={[1.4, 4, 32]} />
+            <meshStandardMaterial color="#ffffff" roughness={0.2} metalness={0.1} />
+          </mesh>
+          
+          {/* PSLV-XL 6 Strap-on solid boosters (Drop at stage 1) */}
+          {vehicle === 'PSLV-XL' && stage === 0 && [0, 60, 120, 180, 240, 300].map((angle, i) => {
+            const rad = THREE.MathUtils.degToRad(angle);
+            const x = Math.cos(rad) * 2.0;
+            const z = Math.sin(rad) * 2.0;
+            return (
+              <group key={i} position={[x, -4, z]}>
+                <mesh><cylinderGeometry args={[0.5, 0.5, 12, 16]} /><meshStandardMaterial color="#8B0000" /></mesh>
+                <mesh position={[0, 6.5, 0]}><coneGeometry args={[0.5, 1, 16]} /><meshStandardMaterial color="#8B0000" /></mesh>
+                <mesh position={[0, -6.5, 0]}><cylinderGeometry args={[0.3, 0.6, 1, 16]} /><meshStandardMaterial color="#333333" /></mesh>
+              </group>
+            );
+          })}
+        </>
+      )}
 
-      {/* Volumetric Exhaust Plume Mock (Navier-Stokes styled Sparkles/Particles) */}
-      <group position={[0, -11, 0]}>
+      {/* ----------------- LVM3 / GSLV / HSLV / NGLV ----------------- */}
+      {(vehicle === 'LVM3' || vehicle === 'GSLV-MK2' || vehicle === 'HSLV' || vehicle === 'NGLV') && (
+        <>
+          {/* Liquid Core Stage */}
+          {stage <= 1 && (
+            <mesh position={[0, -2, 0]}>
+              <cylinderGeometry args={[2.0, 2.0, 18, 32]} />
+              <meshStandardMaterial color="#b3b3b3" roughness={0.5} metalness={0.4} />
+            </mesh>
+          )}
+          {/* Cryo Upper Stage */}
+          {stage <= 2 && (
+            <mesh position={[0, 8.5, 0]}>
+              <cylinderGeometry args={[2.0, 2.0, 3, 32]} />
+              <meshStandardMaterial color="#ffffff" roughness={0.3} metalness={0.1} />
+            </mesh>
+          )}
+          {/* Massive Fairing */}
+          <mesh position={[0, 13, 0]}>
+            <coneGeometry args={[2.5, 6, 32]} />
+            <meshStandardMaterial color="#ffffff" roughness={0.2} metalness={0.1} />
+          </mesh>
+          
+          {/* Two massive solid strap-ons (S200) */}
+          {stage === 0 && [-1, 1].map((side, i) => (
+            <group key={i} position={[side * 2.8, -3, 0]}>
+              <mesh><cylinderGeometry args={[1.6, 1.6, 20, 32]} /><meshStandardMaterial color="#ffffff" /></mesh>
+              <mesh position={[0, 11, 0]}><coneGeometry args={[1.6, 2, 32]} /><meshStandardMaterial color="#ffffff" /></mesh>
+            </group>
+          ))}
+        </>
+      )}
+
+      {/* ----------------- FALCON 9 ----------------- */}
+      {(vehicle === 'FALCON-9') && (
+        <>
+          {/* First Stage */}
+          {stage === 0 && (
+            <mesh position={[0, -5, 0]}>
+              <cylinderGeometry args={[1.85, 1.85, 25, 32]} />
+              <meshStandardMaterial color="#ffffff" roughness={0.2} metalness={0.2} />
+              {/* Grid fins (folded) */}
+              <mesh position={[0, 12, 1.85]}><boxGeometry args={[1, 1, 0.1]} /><meshStandardMaterial color="#333" /></mesh>
+              <mesh position={[0, 12, -1.85]}><boxGeometry args={[1, 1, 0.1]} /><meshStandardMaterial color="#333" /></mesh>
+              <mesh position={[1.85, 12, 0]}><boxGeometry args={[0.1, 1, 1]} /><meshStandardMaterial color="#333" /></mesh>
+              <mesh position={[-1.85, 12, 0]}><boxGeometry args={[0.1, 1, 1]} /><meshStandardMaterial color="#333" /></mesh>
+            </mesh>
+          )}
+          {/* Second Stage & Fairing */}
+          <mesh position={[0, 10, 0]}>
+            <cylinderGeometry args={[1.85, 1.85, 5, 32]} />
+            <meshStandardMaterial color="#ffffff" roughness={0.2} metalness={0.2} />
+          </mesh>
+          <mesh position={[0, 15, 0]}>
+            <coneGeometry args={[1.85, 5, 32]} />
+            <meshStandardMaterial color="#ffffff" roughness={0.2} metalness={0.2} />
+          </mesh>
+        </>
+      )}
+
+      {/* Volumetric Exhaust Plume */}
+      <group position={[0, stage === 0 ? -12 : (vehicle === 'FALCON-9' ? 7 : 5), 0]}>
         <points ref={exhaustRef}>
-          <Sparkles count={500} scale={[3, 10, 3]} size={20} speed={2} opacity={0.8} color="#FFD700" />
+          <Sparkles count={stage === 0 ? 800 : 300} scale={[stage === 0 ? 4 : 2, 15, stage === 0 ? 4 : 2]} size={20} speed={2} opacity={0.8} color={stage === 0 ? "#FFD700" : "#4444FF"} />
         </points>
       </group>
     </group>
