@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, Sky, Environment, Trail, Sparkles } from '@react-three/drei';
 import * as THREE from 'three';
@@ -17,8 +17,17 @@ function Rocket() {
   const isFairingSeparated = altitude > 110000;
 
   // Track dropped stages for procedural tumbling
+  interface DebrisItem {
+    id: string;
+    type: string;
+    position: THREE.Vector3;
+    rotation: THREE.Vector3;
+    velocity: THREE.Vector3;
+    rotVelocity: THREE.Vector3;
+  }
+  
   const prevStageRef = useRef(stage);
-  const [debris, setDebris] = useState<any[]>([]);
+  const [debris, setDebris] = useState<DebrisItem[]>([]);
 
   useEffect(() => {
     // Reset on new flight
