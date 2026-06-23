@@ -36,11 +36,11 @@ export default function TelemetryDashboard() {
 
   if (!data) {
     return (
-      <div className="w-full h-full flex items-center justify-center bg-[var(--color-background)]">
+      <div className="w-full h-full flex items-center justify-center bg-black/40 backdrop-blur-sm pointer-events-none">
         <div className="flex flex-col items-center space-y-4">
           <div className="w-8 h-8 border-4 border-[var(--color-accent-cyan)] border-t-transparent rounded-full animate-spin"></div>
           <p className="font-mono text-sm tracking-widest text-[var(--color-accent-cyan)]">
-            {isConnected ? "AWAITING TELEMETRY STREAM..." : "CONNECTING TO ENGINE..."}
+            {isConnected ? "AWAITING IGNITION SEQUENCE..." : "ESTABLISHING DATALINK..."}
           </p>
         </div>
       </div>
