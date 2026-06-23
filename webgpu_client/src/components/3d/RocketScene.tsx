@@ -30,7 +30,7 @@ function Rocket() {
 
   return (
     <group ref={meshRef}>
-      {/* Central Core */}
+      {/* Central Core (PS1) - 2.8m diameter = 1.4m radius */}
       <mesh position={[0, 0, 0]}>
         <cylinderGeometry args={[1.4, 1.4, 20, 32]} />
         <meshStandardMaterial color="#eeeeee" roughness={0.3} metalness={0.2} />
@@ -38,23 +38,31 @@ function Rocket() {
       {/* Fairing */}
       <mesh position={[0, 11, 0]}>
         <coneGeometry args={[1.4, 4, 32]} />
-        <meshStandardMaterial color="#eeeeee" roughness={0.2} metalness={0.1} />
+        <meshStandardMaterial color="#ffffff" roughness={0.2} metalness={0.1} />
       </mesh>
       
-      {/* Strap-on boosters (Mocking PSLV-XL 6 strap-ons) */}
+      {/* PSLV-XL 6 Strap-on solid boosters (PSOM-XL) */}
       {[0, 60, 120, 180, 240, 300].map((angle, i) => {
         const rad = THREE.MathUtils.degToRad(angle);
-        const x = Math.cos(rad) * 2;
-        const z = Math.sin(rad) * 2;
+        const radiusOffset = 1.4 + 0.5 + 0.1; // Core radius + booster radius + gap
+        const x = Math.cos(rad) * radiusOffset;
+        const z = Math.sin(rad) * radiusOffset;
         return (
           <group key={i} position={[x, -2, z]}>
+            {/* Booster Body */}
             <mesh>
-              <cylinderGeometry args={[0.5, 0.5, 10, 16]} />
-              <meshStandardMaterial color="#FFB000" roughness={0.4} metalness={0.6} />
+              <cylinderGeometry args={[0.5, 0.5, 12, 16]} />
+              <meshStandardMaterial color="#8B0000" roughness={0.6} metalness={0.1} /> {/* ISRO rust red */}
             </mesh>
-            <mesh position={[0, 5.5, 0]}>
+            {/* Booster Nose Cone */}
+            <mesh position={[0, 6.5, 0]}>
               <coneGeometry args={[0.5, 1, 16]} />
-              <meshStandardMaterial color="#FFB000" roughness={0.4} metalness={0.6} />
+              <meshStandardMaterial color="#8B0000" roughness={0.6} metalness={0.1} />
+            </mesh>
+            {/* Metallic Nozzle */}
+            <mesh position={[0, -6.5, 0]}>
+              <cylinderGeometry args={[0.3, 0.6, 1, 16]} />
+              <meshStandardMaterial color="#333333" roughness={0.2} metalness={0.9} />
             </mesh>
           </group>
         );
@@ -74,24 +82,24 @@ function AtmosphericLighting() {
   const data = useTelemetryStore((state) => state.data);
   const altitude = data ? data.altitude : 0;
   
-  // Dynamic atmospheric parameters
-  // Interpolate sun position and mie scattering based on altitude
-  const mieCoefficient = useMemo(() => {
-    // 0.005 at sea level, 0.0 at 100km
-    return Math.max(0, 0.005 * (1 - altitude / 100000));
-  }, [altitude]);
+  // Dynamic atmospheric parameters (Karman line at 100,000m)
+  const atmosphericDensity = Math.max(0, 1 - (altitude / 100000));
+  
+  const rayleigh = 2 * atmosphericDensity; // Fades to 0 (black void) in space
+  const mieCoefficient = 0.005 * atmosphericDensity;
   
   const sunPosition = useMemo(() => {
-    // Sun drops lower relative to vehicle as it ascends (mocking orbit)
-    const angle = Math.PI / 4 + (altitude / 500000) * (Math.PI / 2);
+    // Sun drops lower relative to vehicle as it ascends (mocking orbital curvature)
+    const angle = Math.PI / 4 + (Math.min(altitude, 200000) / 400000) * (Math.PI / 2);
     return new THREE.Vector3(Math.cos(angle)*100, Math.sin(angle)*100, -50);
   }, [altitude]);
 
   return (
     <>
-      <ambientLight intensity={Math.max(0.1, 0.5 * (1 - altitude / 200000))} />
+      <ambientLight intensity={Math.max(0.05, 0.4 * atmosphericDensity)} />
       <directionalLight position={sunPosition} intensity={2.5} castShadow />
-      {/* Volumetric Scattering */}
+      
+      {/* Ray-marching Volumetric Scattering - Transits to Black at 100km */}
       <Sky 
         distance={450000} 
         sunPosition={sunPosition} 
@@ -99,7 +107,7 @@ function AtmosphericLighting() {
         azimuth={0.25} 
         mieCoefficient={mieCoefficient} 
         mieDirectionalG={0.8} 
-        rayleigh={0.5 + (altitude / 100000)}
+        rayleigh={rayleigh}
       />
     </>
   );

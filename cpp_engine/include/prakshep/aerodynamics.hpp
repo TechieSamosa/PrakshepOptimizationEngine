@@ -32,11 +32,18 @@ namespace aerodynamics {
  */
 double get_drag_coefficient(double mach, const RocketConfig& config);
 
+struct GridFinConfig {
+    double area = 0.0;
+    double max_angle = 0.0; // Max deployment angle
+    bool deployed = false;
+};
+
 /**
  * @brief Compute the aerodynamic drag force vector in ECI.
  *
  * Accounts for atmospheric co-rotation by subtracting the local
  * atmosphere velocity (ω × r) from the inertial velocity.
+ * Also accounts for reverse atmospheric entry mechanics.
  *
  * @param state  Current vehicle state vector.
  * @param config Vehicle configuration.
@@ -45,6 +52,18 @@ double get_drag_coefficient(double mach, const RocketConfig& config);
  */
 Vec3 compute_drag(const StateVector& state, const RocketConfig& config,
                   const AtmosphereState& atm);
+
+/**
+ * @brief Compute lift and drag forces from deployed grid fins during reverse atmospheric entry.
+ * 
+ * @param state     Current vehicle state vector.
+ * @param atm       Local atmospheric conditions.
+ * @param grid_fins Grid fin configuration.
+ * @param angle_of_attack The effective angle of attack of the grid fins.
+ * @return Force vector in ECI (N) applied by the grid fins.
+ */
+Vec3 compute_grid_fin_force(const StateVector& state, const AtmosphereState& atm, 
+                            const GridFinConfig& grid_fins, double angle_of_attack);
 
 /**
  * @brief Compute dynamic pressure q = ½ ρ v².

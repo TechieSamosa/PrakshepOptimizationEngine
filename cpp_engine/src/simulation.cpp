@@ -103,7 +103,39 @@ TelemetryFrame Simulation::tick(double dt) {
     Vec3 old_velocity = state_.velocity;
     double old_mass = state_.mass;
     
-    state_ = integrator::rk4_step(state_, config_, current_stage_, cmd.throttle, cmd.gimbal_pitch, cmd.gimbal_yaw, dt);
+    double lat, lon, geodetic_altitude;
+    eci_to_geodetic(state_.position, lat, lon, geodetic_altitude);
+
+    // ----------------------------------------------------------------------
+    // State Vector Handoff: 
+    // Transition to pure J2 oblate gravity orbital propagator if above 150km
+    // or atmospheric density is negligible (handles stable orbit/BAS docking)
+    // ----------------------------------------------------------------------
+    if (geodetic_altitude > 150000.0) {
+        // Fast RK4 specialized for pure J2 orbital propagation (zero thrust, zero drag)
+        auto orbit_deriv = [](const Vec3& pos, const Vec3& vel, Vec3& dpos, Vec3& dvel) {
+            dpos = vel;
+            dvel = gravity::compute(pos); // J2 oblate gravity
+        };
+        
+        Vec3 k1_p, k1_v, k2_p, k2_v, k3_p, k3_v, k4_p, k4_v;
+        orbit_deriv(state_.position, state_.velocity, k1_p, k1_v);
+        orbit_deriv(state_.position + k1_p * (dt/2.0), state_.velocity + k1_v * (dt/2.0), k2_p, k2_v);
+        orbit_deriv(state_.position + k2_p * (dt/2.0), state_.velocity + k2_v * (dt/2.0), k3_p, k3_v);
+        orbit_deriv(state_.position + k3_p * dt, state_.velocity + k3_v * dt, k4_p, k4_v);
+        
+        state_.position += (k1_p + k2_p * 2.0 + k3_p * 2.0 + k4_p) * (dt / 6.0);
+        state_.velocity += (k1_v + k2_v * 2.0 + k3_v * 2.0 + k4_v) * (dt / 6.0);
+        state_.time += dt;
+        
+        // Attitude control in orbit (RCS approximation)
+        if (cmd.gimbal_pitch != 0 || cmd.gimbal_yaw != 0) {
+             // RCS thrust not modelled here, but attitude changes would be tracked
+        }
+    } else {
+        // Atmospheric integration via 6-DOF
+        state_ = integrator::rk4_step(state_, config_, current_stage_, cmd.throttle, cmd.gimbal_pitch, cmd.gimbal_yaw, dt);
+    }
     
     // Acceleration estimate
     Vec3 acceleration = (state_.velocity - old_velocity) / dt;
@@ -116,7 +148,6 @@ TelemetryFrame Simulation::tick(double dt) {
     
     handle_staging();
     
-    double lat, lon, geodetic_altitude;
     eci_to_geodetic(state_.position, lat, lon, geodetic_altitude);
     
     if (state_.time > 10.0 && geodetic_altitude < 0.0) {

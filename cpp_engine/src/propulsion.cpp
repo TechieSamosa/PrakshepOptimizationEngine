@@ -139,19 +139,31 @@ PropulsionState compute(const StageConfig& stage,
     const double isp = interpolate_isp(stage, altitude);
 
     // ------------------------------------------------------------------
-    // 3. Effective throttle – solid motors cannot be throttled
+    // 3. Multi-engine cluster throttling & effective throttle
+    //    Solid motors override throttle to 1.0.
+    //    For liquid clustered engines (e.g., Falcon 9), support deep 
+    //    throttling via selective 1, 3, or 9 engine firings.
     // ------------------------------------------------------------------
-    const double effective_throttle = stage.is_solid ? 1.0 : std::clamp(throttle, 0.0, 1.0);
+    double effective_throttle = stage.is_solid ? 1.0 : std::clamp(throttle, 0.0, 1.0);
+    int active_engines = stage.count;
+
+    if (!stage.is_solid && stage.count >= 9 && effective_throttle > 0.0) {
+        // Falcon 9 profile: 1, 3, or 9 engines
+        if (effective_throttle < 0.15) {
+            active_engines = 1;
+            effective_throttle = std::clamp(effective_throttle * 9.0, 0.4, 1.0); // 1 engine at 40-100%
+        } else if (effective_throttle < 0.4) {
+            active_engines = 3;
+            effective_throttle = std::clamp(effective_throttle * 3.0, 0.4, 1.0); // 3 engines at 40-100%
+        }
+    }
 
     // ------------------------------------------------------------------
     // 4. Scalar thrust magnitude
-    //    We use thrust_vacuum here because Isp already encodes the altitude
-    //    correction. Alternatively one could interpolate thrust directly, but
-    //    the Isp-based mass-flow approach is more physically consistent for
-    //    the trajectory integrator.
+    //    Using thrust_vacuum; Isp scales the mass flow.
     // ------------------------------------------------------------------
     const double thrust_magnitude = stage.thrust_vacuum * effective_throttle
-                                    * static_cast<double>(stage.count);
+                                    * static_cast<double>(active_engines);
 
     // ------------------------------------------------------------------
     // 5. Mass flow rate from the rocket equation: F = ṁ · Isp · g₀

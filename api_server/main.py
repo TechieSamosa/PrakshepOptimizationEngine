@@ -12,10 +12,17 @@ app = FastAPI(title="Prakshep API Engine")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
+    allow_origins=[
+        "http://localhost:3000",
+        "https://prakshep.vercel.app", 
+        "https://prakshepoptimizationengine.vercel.app",
+        "*" # Fallback for dynamically generated Vercel branch URLs
+    ],
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    allow_headers=["Content-Type", "Authorization", "Accept", "Origin", "X-Requested-With"],
+    expose_headers=["Content-Length", "X-Total-Count"],
+    max_age=600,
 )
 
 app.include_router(telemetry.router)

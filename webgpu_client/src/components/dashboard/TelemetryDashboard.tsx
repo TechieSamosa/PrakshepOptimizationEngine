@@ -1,46 +1,44 @@
 'use client';
 
-import React from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useTelemetryStore } from '@/store/telemetryStore';
-import { Activity, AlertTriangle, CheckCircle, Navigation, ShieldAlert, Wind } from 'lucide-react';
 import clsx from 'clsx';
-
-function DataCard({ title, value, unit, icon, alert = false }: { title: string, value: string | number, unit: string, icon: React.ReactNode, alert?: boolean }) {
-  return (
-    <div className={clsx(
-      "flex flex-col p-4 bg-[var(--color-panel)] border rounded-lg transition-colors",
-      alert ? "border-[var(--color-accent-red)] shadow-[0_0_15px_rgba(255,42,42,0.3)]" : "border-[var(--color-panel-border)]"
-    )}>
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-xs tracking-widest text-gray-400 font-semibold uppercase">{title}</span>
-        <span className={alert ? "text-[var(--color-accent-red)]" : "text-[var(--color-accent-cyan)]"}>
-          {icon}
-        </span>
-      </div>
-      <div className="flex items-baseline space-x-1">
-        <span className={clsx(
-          "text-2xl font-mono tabular-nums font-bold",
-          alert ? "text-[var(--color-accent-red)]" : "text-[var(--color-foreground)]"
-        )}>
-          {value}
-        </span>
-        <span className="text-sm font-mono text-gray-500">{unit}</span>
-      </div>
-    </div>
-  );
-}
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip, ScatterChart, Scatter, ZAxis } from 'recharts';
 
 export default function TelemetryDashboard() {
-  const data = useTelemetryStore((state) => state.data);
-  const isConnected = useTelemetryStore((state) => state.isConnected);
+  const { data, history, isConnected } = useTelemetryStore();
+  const [flashingAlert, setFlashingAlert] = useState<string | null>(null);
+
+  // Downsample history for performance in charts (max 200 points)
+  const chartData = useMemo(() => {
+    if (!history || history.length === 0) return [];
+    const step = Math.max(1, Math.floor(history.length / 200));
+    return history.filter((_, i) => i % step === 0).map(frame => ({
+      time: frame.time,
+      altitudeKm: frame.altitude / 1000,
+      velocityKms: frame.velocity_magnitude / 1000,
+      rangeKm: frame.downrange_distance / 1000,
+      lat: frame.latitude,
+      lon: frame.longitude
+    }));
+  }, [history]);
+
+  // Handle Flashing Alerts based on event changes
+  useEffect(() => {
+    if (data && data.event && data.event !== 'NOMINAL FLIGHT') {
+      setFlashingAlert(data.event);
+      const timer = setTimeout(() => setFlashingAlert(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [data?.event]);
 
   if (!data) {
     return (
-      <div className="w-full h-full flex items-center justify-center bg-black/40 backdrop-blur-sm pointer-events-none">
+      <div className="w-full h-full flex items-center justify-center bg-[#00000A]/80 backdrop-blur-md pointer-events-none">
         <div className="flex flex-col items-center space-y-4">
-          <div className="w-8 h-8 border-4 border-[var(--color-accent-cyan)] border-t-transparent rounded-full animate-spin"></div>
-          <p className="font-mono text-sm tracking-widest text-[var(--color-accent-cyan)]">
-            {isConnected ? "AWAITING IGNITION SEQUENCE..." : "ESTABLISHING DATALINK..."}
+          <div className="w-8 h-8 border-4 border-yellow-500 border-t-transparent rounded-full animate-spin"></div>
+          <p className="font-mono text-sm tracking-widest text-yellow-500 font-bold">
+            {isConnected ? "AWAITING LIFTOFF TELEMETRY..." : "ESTABLISHING RADAR DATALINK..."}
           </p>
         </div>
       </div>
@@ -48,99 +46,128 @@ export default function TelemetryDashboard() {
   }
 
   // Formatting for display
-  const altitudeKm = (data.altitude / 1000).toFixed(2);
-  const velocityMach = data.mach_number.toFixed(2);
-  const qDynkPa = (data.dynamic_pressure / 1000).toFixed(2);
-  
-  const isMaxQ = data.max_q_reached;
-  const isAnomaly = data.structural_integrity < 0.8;
-  const tMinus = data.time.toFixed(1);
+  const tMinus = data.time.toFixed(1).padStart(5, '0');
+  const altitudeKm = (data.altitude / 1000).toFixed(2).padStart(6, '0');
+  const rangeKm = (data.downrange_distance / 1000).toFixed(2).padStart(6, '0');
+  const velocityKms = (data.velocity_magnitude / 1000).toFixed(3).padStart(6, '0');
+  const azimuthDeg = data.yaw.toFixed(2).padStart(6, '0');
 
   return (
-    <div className="w-full h-full flex flex-col pointer-events-none p-4 justify-between">
+    <div className="w-full h-full flex flex-col pointer-events-none font-mono selection:bg-transparent overflow-hidden">
       
-      {/* Top Bar: Status & Time */}
-      <div className="flex justify-between items-start w-full">
-        <div className="flex items-center space-x-3 bg-[var(--color-panel)] border border-[var(--color-panel-border)] px-4 py-2 rounded-lg pointer-events-auto">
-          <div className={clsx("w-3 h-3 rounded-full animate-pulse", isConnected ? "bg-[var(--color-accent-green)] shadow-[0_0_8px_#39FF14]" : "bg-red-500")} />
-          <span className="font-mono text-sm tracking-widest text-white">60HZ DATALINK</span>
+      {/* Top Banner */}
+      <div className="w-full bg-[#000005]/90 border-b-2 border-green-800 p-2 flex justify-between items-center z-10 shadow-[0_4px_20px_rgba(0,0,0,0.8)]">
+        <div className="flex items-center space-x-4">
+          <div className="text-yellow-400 font-bold tracking-widest text-lg">ISRO MCC / SHAR</div>
+          <div className="text-green-500 text-xs tracking-widest border border-green-800 px-2 py-1 bg-green-900/20">DATALINK NOMINAL [60HZ]</div>
         </div>
-        
-        <div className="flex items-center bg-[var(--color-panel)] border border-[var(--color-panel-border)] px-6 py-2 rounded-lg text-center pointer-events-auto">
-          <span className="text-xs tracking-widest text-gray-400 font-semibold uppercase mr-4">Mission Time</span>
-          <span className="font-mono text-xl tabular-nums font-bold text-white">T+ {tMinus}s</span>
+        <div className="flex items-center space-x-4">
+          <div className="text-white text-xs tracking-widest bg-blue-900/30 px-3 py-1 border border-blue-800">WGS84 RADAR TRACK</div>
         </div>
       </div>
 
-      {/* Right Side: Gauges */}
-      <div className="absolute right-4 top-20 bottom-4 w-64 flex flex-col space-y-4 pointer-events-auto overflow-y-auto pr-2 pb-4">
+      {/* Main 3-Panel Layout */}
+      <div className="flex-1 w-full grid grid-cols-3 gap-2 p-2 z-10">
         
-        <DataCard 
-          title="Altitude" 
-          value={altitudeKm} 
-          unit="km" 
-          icon={<Navigation size={18} />} 
-        />
-        
-        <DataCard 
-          title="Velocity" 
-          value={velocityMach} 
-          unit="Mach" 
-          icon={<Activity size={18} />} 
-        />
-        
-        <DataCard 
-          title="Dynamic Pressure" 
-          value={qDynkPa} 
-          unit="kPa" 
-          icon={<Wind size={18} />} 
-          alert={isMaxQ}
-        />
+        {/* Panel 1: Time vs Alt & Time vs Vel */}
+        <div className="bg-[#000015]/80 backdrop-blur-md border border-gray-800 rounded p-2 flex flex-col relative overflow-hidden pointer-events-auto shadow-lg">
+          <div className="absolute inset-0 bg-[linear-gradient(rgba(0,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(0,255,255,0.03)_1px,transparent_1px)] bg-[size:20px_20px] pointer-events-none" />
+          <div className="text-yellow-500 text-xs font-bold tracking-widest mb-2 z-10 border-b border-gray-800 pb-1">FLIGHT PROFILE (TIME VS ALT/VEL)</div>
+          <div className="flex-1 w-full h-full z-10">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+                <XAxis dataKey="time" type="number" domain={['auto', 'auto']} tickFormatter={(v) => `T+${Math.floor(v)}s`} stroke="#4b5563" tick={{fontSize: 10, fill: '#9ca3af'}} />
+                <YAxis yAxisId="left" stroke="#3b82f6" tick={{fontSize: 10, fill: '#3b82f6'}} />
+                <YAxis yAxisId="right" orientation="right" stroke="#eab308" tick={{fontSize: 10, fill: '#eab308'}} />
+                <Tooltip contentStyle={{backgroundColor: '#000015', border: '1px solid #374151', fontSize: '10px'}} labelStyle={{color: '#9ca3af'}} />
+                <Line yAxisId="left" type="monotone" dataKey="altitudeKm" stroke="#3b82f6" dot={false} strokeWidth={2} name="Alt (km)" isAnimationActive={false} />
+                <Line yAxisId="right" type="monotone" dataKey="velocityKms" stroke="#eab308" dot={false} strokeWidth={2} name="Vel (km/s)" isAnimationActive={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
 
-        <DataCard 
-          title="Propellant" 
-          value={(data.propellant_remaining * 100).toFixed(1)} 
-          unit="%" 
-          icon={<CheckCircle size={18} />} 
-          alert={data.propellant_remaining < 0.05 && data.thrust > 0}
-        />
+        {/* Panel 2: Range vs Alt */}
+        <div className="bg-[#000015]/80 backdrop-blur-md border border-gray-800 rounded p-2 flex flex-col relative overflow-hidden pointer-events-auto shadow-lg">
+          <div className="absolute inset-0 bg-[linear-gradient(rgba(0,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(0,255,255,0.03)_1px,transparent_1px)] bg-[size:20px_20px] pointer-events-none" />
+          <div className="text-yellow-500 text-xs font-bold tracking-widest mb-2 z-10 border-b border-gray-800 pb-1">TRAJECTORY (RANGE VS ALT)</div>
+          <div className="flex-1 w-full h-full z-10">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+                <XAxis dataKey="rangeKm" type="number" domain={['auto', 'auto']} stroke="#4b5563" tick={{fontSize: 10, fill: '#9ca3af'}} />
+                <YAxis dataKey="altitudeKm" stroke="#22c55e" tick={{fontSize: 10, fill: '#22c55e'}} />
+                <Tooltip contentStyle={{backgroundColor: '#000015', border: '1px solid #374151', fontSize: '10px'}} labelStyle={{color: '#9ca3af'}} />
+                <Line type="monotone" dataKey="altitudeKm" stroke="#22c55e" dot={false} strokeWidth={2} name="Alt (km)" isAnimationActive={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Panel 3: Ground Trace (Lat vs Lon) */}
+        <div className="bg-[#000015]/80 backdrop-blur-md border border-gray-800 rounded p-2 flex flex-col relative overflow-hidden pointer-events-auto shadow-lg">
+          <div className="absolute inset-0 bg-[linear-gradient(rgba(0,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(0,255,255,0.03)_1px,transparent_1px)] bg-[size:20px_20px] pointer-events-none" />
+          <div className="text-yellow-500 text-xs font-bold tracking-widest mb-2 z-10 border-b border-gray-800 pb-1">GROUND TRACE (WGS84 PROJECTION)</div>
+          <div className="flex-1 w-full h-full z-10">
+            <ResponsiveContainer width="100%" height="100%">
+              <ScatterChart margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+                <XAxis dataKey="lon" type="number" domain={['auto', 'auto']} stroke="#4b5563" tick={{fontSize: 10, fill: '#9ca3af'}} name="Longitude" />
+                <YAxis dataKey="lat" type="number" domain={['auto', 'auto']} stroke="#f97316" tick={{fontSize: 10, fill: '#f97316'}} name="Latitude" />
+                <ZAxis range={[10, 10]} />
+                <Tooltip cursor={{strokeDasharray: '3 3'}} contentStyle={{backgroundColor: '#000015', border: '1px solid #374151', fontSize: '10px'}} />
+                <Scatter name="Trace" data={chartData} fill="#f97316" line shape="circle" isAnimationActive={false} />
+              </ScatterChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+      </div>
+
+      {/* Bottom HUD Data Banner */}
+      <div className="w-full bg-[#000005]/95 border-t-2 border-gray-800 p-4 z-10 flex flex-col shadow-[0_-4px_20px_rgba(0,0,0,0.8)] pointer-events-auto">
         
-        {/* LSTM Anomaly Prediction Panel */}
-        <div className={clsx(
-          "flex flex-col p-4 bg-[var(--color-panel)] border rounded-lg transition-colors mt-8",
-          isAnomaly ? "border-[var(--color-accent-red)] bg-red-900/20" : "border-[var(--color-panel-border)]"
-        )}>
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs tracking-widest text-gray-400 font-semibold uppercase">LSTM Anomaly Pred</span>
-            <ShieldAlert size={18} className={isAnomaly ? "text-[var(--color-accent-red)] animate-pulse" : "text-gray-500"} />
-          </div>
-          
-          <div className="w-full bg-gray-800 rounded-full h-2.5 mb-2">
-            <div 
-              className={clsx("h-2.5 rounded-full transition-all duration-300", isAnomaly ? "bg-[var(--color-accent-red)]" : "bg-[var(--color-accent-green)]")} 
-              style={{ width: `${Math.max(0, Math.min(100, data.structural_integrity * 100))}%` }}
-            ></div>
-          </div>
-          <div className="flex justify-between text-xs font-mono">
-            <span className="text-gray-500">Critical</span>
-            <span className="text-white">{(data.structural_integrity * 100).toFixed(1)}%</span>
-          </div>
-          
-          {isAnomaly && (
-            <div className="mt-3 flex items-center space-x-2 text-[var(--color-accent-red)] font-mono text-xs animate-pulse">
-              <AlertTriangle size={14} />
-              <span>STRUCTURAL FAILURE IMMINENT</span>
+        {/* Alerts Row */}
+        <div className="w-full h-6 mb-2 flex justify-center items-center">
+          {flashingAlert && (
+            <div className="text-red-500 font-bold tracking-[0.3em] animate-pulse bg-red-900/20 px-8 border border-red-800">
+              !!! {flashingAlert} !!!
             </div>
           )}
         </div>
 
-        {/* Action Logger */}
-        <div className="flex flex-col p-4 bg-[var(--color-panel)] border border-[var(--color-panel-border)] rounded-lg">
-           <span className="text-xs tracking-widest text-gray-400 font-semibold uppercase mb-2">Stage Status</span>
-           <span className="font-mono text-sm text-[var(--color-accent-amber)]">{data.event}</span>
+        {/* Telemetry Numbers */}
+        <div className="flex justify-between items-center w-full px-8 tabular-nums">
+          
+          <div className="flex flex-col items-center">
+            <span className="text-gray-500 text-xs tracking-widest mb-1">TIME (s)</span>
+            <span className="text-white text-3xl font-bold tracking-wider">{tMinus}</span>
+          </div>
+
+          <div className="flex flex-col items-center">
+            <span className="text-gray-500 text-xs tracking-widest mb-1">RANGE (km)</span>
+            <span className="text-green-500 text-3xl font-bold tracking-wider">{rangeKm}</span>
+          </div>
+
+          <div className="flex flex-col items-center">
+            <span className="text-gray-500 text-xs tracking-widest mb-1">ALTITUDE (km)</span>
+            <span className="text-blue-500 text-3xl font-bold tracking-wider">{altitudeKm}</span>
+          </div>
+
+          <div className="flex flex-col items-center">
+            <span className="text-gray-500 text-xs tracking-widest mb-1">REL. VELOCITY (km/s)</span>
+            <span className="text-yellow-500 text-3xl font-bold tracking-wider">{velocityKms}</span>
+          </div>
+
+          <div className="flex flex-col items-center">
+            <span className="text-gray-500 text-xs tracking-widest mb-1">AZIMUTH (deg)</span>
+            <span className="text-white text-3xl font-bold tracking-wider">{azimuthDeg}</span>
+          </div>
+
         </div>
       </div>
-      
+
     </div>
   );
 }

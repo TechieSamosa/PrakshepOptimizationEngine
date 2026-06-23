@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { wsClient, ConnectionStatus } from '@/lib/websocket';
 
 export interface TelemetryFrame {
   time: number;
@@ -29,58 +30,43 @@ export interface TelemetryFrame {
 
 interface TelemetryState {
   data: TelemetryFrame | null;
+  history: TelemetryFrame[];
+  status: ConnectionStatus;
   isConnected: boolean;
   connect: () => void;
   disconnect: () => void;
 }
 
 export const useTelemetryStore = create<TelemetryState>((set, get) => {
-  let ws: WebSocket | null = null;
+  // Bind external websocket events to store state
+  wsClient.addStatusHandler((status) => {
+    set({ status, isConnected: status === 'CONNECTED' });
+  });
+
+  wsClient.addMessageHandler((data: TelemetryFrame) => {
+    set((state) => {
+      // Keep last 600 frames (10 seconds at 60Hz) or whatever is needed for full flight. 
+      // For a 3 minute flight at 60Hz = 10,800 frames. We'll store all to show the full path.
+      return { 
+        data,
+        history: [...state.history, data]
+      };
+    });
+  });
 
   return {
     data: null,
-    isConnected: false,
+    history: [],
+    status: wsClient.status,
+    isConnected: wsClient.status === 'CONNECTED',
     
     connect: () => {
-      if (ws && ws.readyState === WebSocket.OPEN) return;
-      
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const host = window.location.host;
-      const wsUrl = process.env.NEXT_PUBLIC_WS_URL || `${protocol}//${host}/ws/telemetry`;
-      
-      ws = new WebSocket(wsUrl);
-      
-      ws.onopen = () => {
-        console.log('WebSocket Connected');
-        set({ isConnected: true });
-      };
-      
-      ws.onmessage = (event) => {
-        try {
-          const frame = JSON.parse(event.data);
-          set({ data: frame });
-        } catch (e) {
-          console.error("Failed to parse telemetry frame", e);
-        }
-      };
-      
-      ws.onclose = () => {
-        console.log('WebSocket Disconnected');
-        set({ isConnected: false });
-        // Auto reconnect
-        setTimeout(() => get().connect(), 1000);
-      };
-      
-      ws.onerror = (error) => {
-        console.error('WebSocket Error:', error);
-      };
+      wsClient.connect();
     },
     
     disconnect: () => {
-      if (ws) {
-        ws.close();
-        ws = null;
-      }
+      wsClient.disconnect();
+      set({ data: null, history: [] });
     }
   };
 });
