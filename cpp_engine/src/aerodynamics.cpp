@@ -223,7 +223,12 @@ Vec3 compute_grid_fin_force(const StateVector& state, const AtmosphereState& atm
     // In a full 6-DOF, we'd use the attitude quaternion to compute the lift vector direction.
     // Here we provide the magnitude along the appropriate local axis.
     // We assume the flight computer handles roll to orient the lift vector.
-    Vec3 lift_vec = {0, 0, 0}; // To be fully resolved by the 6-DOF integrator using body frame
+    // For now, we apply lift vertically relative to the velocity vector to simulate pitch control.
+    Vec3 lift_dir = Vec3(0, 0, 1).cross(v_rel).normalized(); // Simplified orthogonal vector
+    if (lift_dir.norm_squared() < 0.1) {
+        lift_dir = Vec3(1, 0, 0);
+    }
+    Vec3 lift_vec = lift_dir * lift_mag;
 
     return drag_vec + lift_vec;
 }

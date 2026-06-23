@@ -4,6 +4,7 @@
 #include "prakshep/integrator.hpp"
 #include "prakshep/aerodynamics.hpp"
 #include "prakshep/rocket_config.hpp"
+#include "prakshep/gravity.hpp"
 
 #include <cmath>
 
