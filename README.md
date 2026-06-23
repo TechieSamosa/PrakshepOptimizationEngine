@@ -31,7 +31,7 @@
 | 🧠 | **Reinforcement Learning GNC Agent** | PPO/SAC-trained guidance, navigation & control with continuous learning from user scenarios |
 | 🔮 | **LSTM Anomaly Detection** | Pre-launch failure mode prediction and in-flight structural integrity monitoring |
 | 🎮 | **AAA WebGPU Graphics** | PBR materials, volumetric atmosphere, real-time particle effects, and cinematic camera |
-| 🗺️ | **CesiumJS Live Tracking Map** | Global ground-track visualization with 3D terrain and orbital path overlay |
+| 🗺️ | **HTML5 Canvas Tracking Map** | Custom Equirectangular global ground-track visualization |
 | 📡 | **60 Hz WebSocket Telemetry** | Real-time streaming of 14-state telemetry at mission-control fidelity |
 
 ---
@@ -69,7 +69,7 @@ graph LR
     subgraph Frontend["🎮 Frontend (Next.js)"]
         UI["Control Room UI<br/>Shadcn/ui"]
         GPU["WebGPU Viewport<br/>PBR Rendering"]
-        MAP["CesiumJS Map<br/>Ground Track"]
+        MAP["Canvas Map<br/>Ground Trace"]
     end
 
     SIM -->|pybind11| ENV
@@ -261,7 +261,17 @@ Open `http://localhost:3000` to access the control room.
 | **Frontend** | Next.js 14 + React 18 | Mission control room UI |
 | **Styling** | TailwindCSS + Shadcn/ui | Dark ISRO-inspired aesthetic, responsive design |
 | **3D Graphics** | React Three Fiber + WebGPU | PBR rocket rendering, volumetric atmosphere |
-| **Maps** | CesiumJS | 3D globe ground-track visualization |
+| **Maps** | HTML5 Canvas API | Highly-optimized 2D Equirectangular tracking engine |
+
+---
+
+## 🤝 Contributing & Open Source
+
+We are actively looking for contributors! Whether you are a **C++ physics engineer**, a **React/Next.js frontend dev**, or a **technical artist/designer**, there is a place for you here.
+
+1. Read our [Contribution Guidelines](CONTRIBUTING.md) and [Code of Conduct](CODE_OF_CONDUCT.md).
+2. Check out the `.github/ISSUES.md` file for a list of open tasks tagged with `help wanted` and `good first issue`.
+3. Fork the repository, create your feature branch, and submit a PR!
 
 ---
 

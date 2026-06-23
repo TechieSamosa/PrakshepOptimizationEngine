@@ -6,24 +6,57 @@ import clsx from 'clsx';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip, ScatterChart, Scatter, ZAxis } from 'recharts';
 
 export default function TelemetryDashboard() {
-  const { data, history, isConnected } = useTelemetryStore();
+  const { data, history, nominalTrajectory, isConnected } = useTelemetryStore();
   const [flashingAlert, setFlashingAlert] = useState<string | null>(null);
 
-  // Downsample history for performance in charts (max 200 points)
+  // Downsample history and merge with nominal trajectory for Recharts
   const chartData = useMemo(() => {
-    if (!history || history.length === 0) return [];
-    const step = Math.max(1, Math.floor(history.length / 200));
-    return history.filter((_, i) => i % step === 0).map(frame => ({
-      time: frame.time,
-      altitudeKm: frame.altitude / 1000,
-      velocityKms: frame.velocity_magnitude / 1000,
-      rangeKm: frame.downrange_distance / 1000,
-      lat: frame.latitude,
-      lon: frame.longitude,
-      gForce: frame.acceleration_magnitude / 9.80665,
-      qkPa: frame.dynamic_pressure / 1000,
-    }));
-  }, [history]);
+    // Determine the max time to display
+    const maxLiveTime = history.length > 0 ? history[history.length - 1].time : 0;
+    const maxNominalTime = nominalTrajectory.length > 0 ? nominalTrajectory[nominalTrajectory.length - 1].time : 0;
+    const maxTime = Math.max(maxLiveTime, maxNominalTime);
+    
+    // We will build a unified array mapped by time
+    const merged: Record<number, any> = {};
+    
+    // Add nominal data (downsampled)
+    if (nominalTrajectory && nominalTrajectory.length > 0) {
+      const step = Math.max(1, Math.floor(nominalTrajectory.length / 200));
+      for (let i = 0; i < nominalTrajectory.length; i += step) {
+        const frame = nominalTrajectory[i];
+        const t = Math.floor(frame.time);
+        merged[t] = {
+          time: t,
+          nominalAlt: frame.altitude / 1000,
+          nominalVel: frame.velocity_magnitude / 1000,
+          nominalRange: frame.downrange_distance / 1000,
+          nominalLat: frame.latitude,
+          nominalLon: frame.longitude,
+          nominalGForce: frame.acceleration_magnitude / 9.80665,
+          nominalQ: frame.dynamic_pressure / 1000,
+        };
+      }
+    }
+    
+    // Merge live data (downsampled)
+    if (history && history.length > 0) {
+      const step = Math.max(1, Math.floor(history.length / 200));
+      for (let i = 0; i < history.length; i += step) {
+        const frame = history[i];
+        const t = Math.floor(frame.time);
+        if (!merged[t]) merged[t] = { time: t };
+        merged[t].liveAlt = frame.altitude / 1000;
+        merged[t].liveVel = frame.velocity_magnitude / 1000;
+        merged[t].liveRange = frame.downrange_distance / 1000;
+        merged[t].liveLat = frame.latitude;
+        merged[t].liveLon = frame.longitude;
+        merged[t].liveGForce = frame.acceleration_magnitude / 9.80665;
+        merged[t].liveQ = frame.dynamic_pressure / 1000;
+      }
+    }
+    
+    return Object.values(merged).sort((a, b) => a.time - b.time);
+  }, [history, nominalTrajectory]);
 
   // Handle Flashing Alerts based on event changes
   useEffect(() => {
@@ -83,8 +116,11 @@ export default function TelemetryDashboard() {
                 <YAxis yAxisId="left" stroke="#3b82f6" tick={{fontSize: 10, fill: '#3b82f6'}} />
                 <YAxis yAxisId="right" orientation="right" stroke="#eab308" tick={{fontSize: 10, fill: '#eab308'}} />
                 <Tooltip contentStyle={{backgroundColor: '#000015', border: '1px solid #374151', fontSize: '10px'}} labelStyle={{color: '#9ca3af'}} />
-                <Line yAxisId="left" type="monotone" dataKey="altitudeKm" stroke="#3b82f6" dot={false} strokeWidth={2} name="Alt (km)" isAnimationActive={false} />
-                <Line yAxisId="right" type="monotone" dataKey="velocityKms" stroke="#eab308" dot={false} strokeWidth={2} name="Vel (km/s)" isAnimationActive={false} />
+                <Line yAxisId="left" type="monotone" dataKey="nominalAlt" stroke="#3b82f6" strokeDasharray="3 3" dot={false} strokeWidth={1} name="Nominal Alt (km)" isAnimationActive={false} />
+                <Line yAxisId="left" type="monotone" dataKey="liveAlt" stroke="#60a5fa" dot={false} strokeWidth={2} name="Live Alt (km)" isAnimationActive={false} />
+                
+                <Line yAxisId="right" type="monotone" dataKey="nominalVel" stroke="#eab308" strokeDasharray="3 3" dot={false} strokeWidth={1} name="Nominal Vel (km/s)" isAnimationActive={false} />
+                <Line yAxisId="right" type="monotone" dataKey="liveVel" stroke="#fef08a" dot={false} strokeWidth={2} name="Live Vel (km/s)" isAnimationActive={false} />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -98,10 +134,11 @@ export default function TelemetryDashboard() {
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
-                <XAxis dataKey="rangeKm" type="number" domain={['auto', 'auto']} stroke="#4b5563" tick={{fontSize: 10, fill: '#9ca3af'}} />
-                <YAxis dataKey="altitudeKm" stroke="#22c55e" tick={{fontSize: 10, fill: '#22c55e'}} />
+                <XAxis dataKey="liveRange" type="number" domain={['auto', 'auto']} stroke="#4b5563" tick={{fontSize: 10, fill: '#9ca3af'}} />
+                <YAxis dataKey="liveAlt" stroke="#22c55e" tick={{fontSize: 10, fill: '#22c55e'}} />
                 <Tooltip contentStyle={{backgroundColor: '#000015', border: '1px solid #374151', fontSize: '10px'}} labelStyle={{color: '#9ca3af'}} />
-                <Line type="monotone" dataKey="altitudeKm" stroke="#22c55e" dot={false} strokeWidth={2} name="Alt (km)" isAnimationActive={false} />
+                <Line type="monotone" dataKey="nominalAlt" stroke="#22c55e" strokeDasharray="3 3" dot={false} strokeWidth={1} name="Nominal Alt" isAnimationActive={false} />
+                <Line type="monotone" dataKey="liveAlt" stroke="#4ade80" dot={false} strokeWidth={2} name="Live Alt" isAnimationActive={false} />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -119,8 +156,11 @@ export default function TelemetryDashboard() {
                 <YAxis yAxisId="left" stroke="#ef4444" tick={{fontSize: 10, fill: '#ef4444'}} />
                 <YAxis yAxisId="right" orientation="right" stroke="#8b5cf6" tick={{fontSize: 10, fill: '#8b5cf6'}} />
                 <Tooltip contentStyle={{backgroundColor: '#000015', border: '1px solid #374151', fontSize: '10px'}} labelStyle={{color: '#9ca3af'}} />
-                <Line yAxisId="left" type="monotone" dataKey="gForce" stroke="#ef4444" dot={false} strokeWidth={2} name="G-Force (g)" isAnimationActive={false} />
-                <Line yAxisId="right" type="monotone" dataKey="qkPa" stroke="#8b5cf6" dot={false} strokeWidth={2} name="Dyn. Pres. (kPa)" isAnimationActive={false} />
+                <Line yAxisId="left" type="monotone" dataKey="nominalGForce" stroke="#ef4444" strokeDasharray="3 3" dot={false} strokeWidth={1} name="Nominal G" isAnimationActive={false} />
+                <Line yAxisId="left" type="monotone" dataKey="liveGForce" stroke="#f87171" dot={false} strokeWidth={2} name="Live G" isAnimationActive={false} />
+                
+                <Line yAxisId="right" type="monotone" dataKey="nominalQ" stroke="#8b5cf6" strokeDasharray="3 3" dot={false} strokeWidth={1} name="Nominal Q" isAnimationActive={false} />
+                <Line yAxisId="right" type="monotone" dataKey="liveQ" stroke="#a78bfa" dot={false} strokeWidth={2} name="Live Q" isAnimationActive={false} />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -134,11 +174,12 @@ export default function TelemetryDashboard() {
             <ResponsiveContainer width="100%" height="100%">
               <ScatterChart margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
-                <XAxis dataKey="lon" type="number" domain={['auto', 'auto']} stroke="#4b5563" tick={{fontSize: 10, fill: '#9ca3af'}} name="Longitude" />
-                <YAxis dataKey="lat" type="number" domain={['auto', 'auto']} stroke="#f97316" tick={{fontSize: 10, fill: '#f97316'}} name="Latitude" />
+                <XAxis dataKey="liveLon" type="number" domain={['auto', 'auto']} stroke="#4b5563" tick={{fontSize: 10, fill: '#9ca3af'}} name="Longitude" />
+                <YAxis dataKey="liveLat" type="number" domain={['auto', 'auto']} stroke="#f97316" tick={{fontSize: 10, fill: '#f97316'}} name="Latitude" />
                 <ZAxis range={[10, 10]} />
                 <Tooltip cursor={{strokeDasharray: '3 3'}} contentStyle={{backgroundColor: '#000015', border: '1px solid #374151', fontSize: '10px'}} />
-                <Scatter name="Trace" data={chartData} fill="#f97316" line shape="circle" isAnimationActive={false} />
+                <Scatter name="Nominal" data={chartData} dataKey="nominalLat" fill="#f97316" shape="circle" line={{strokeDasharray: '3 3', strokeWidth: 1}} isAnimationActive={false} />
+                <Scatter name="Live Trace" data={chartData} dataKey="liveLat" fill="#fdba74" shape="circle" line={{strokeWidth: 2}} isAnimationActive={false} />
               </ScatterChart>
             </ResponsiveContainer>
           </div>

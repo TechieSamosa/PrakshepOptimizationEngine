@@ -10,7 +10,7 @@ import clsx from 'clsx';
 
 // Dynamically import 3D and Map components to avoid SSR issues with Canvas and Cesium
 const RocketScene = dynamic(() => import('@/components/3d/RocketScene'), { ssr: false });
-const CesiumMap = dynamic(() => import('@/components/map/CesiumMap'), { ssr: false });
+const GroundTraceMap = dynamic(() => import('@/components/map/GroundTraceMap'), { ssr: false });
 
 export default function MissionControl() {
   const { connect, disconnect, setMissionConfig } = useTelemetryStore();
@@ -64,7 +64,7 @@ export default function MissionControl() {
       
       {/* Background Viewport (3D or Map) */}
       <div className="absolute inset-0 z-0">
-        {viewMode === '3D' ? <RocketScene /> : <CesiumMap />}
+        {viewMode === '3D' ? <RocketScene /> : <GroundTraceMap />}
       </div>
 
       {/* Overlay Dashboard UI */}
