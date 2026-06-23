@@ -2,13 +2,24 @@ import os
 if os.name == 'nt' and os.path.exists("C:/mingw64/bin"):
     os.add_dll_directory("C:/mingw64/bin")
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 from api_server.config import settings
 from api_server.routers import telemetry, simulation
 from api_server.services.telemetry_broadcaster import broadcaster
 
 app = FastAPI(title="Prakshep API Engine")
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    print(f"Validation Error for {request.url}:")
+    print(exc.errors())
+    return JSONResponse(
+        status_code=422,
+        content={"detail": exc.errors(), "body": exc.body},
+    )
 
 app.add_middleware(
     CORSMiddleware,

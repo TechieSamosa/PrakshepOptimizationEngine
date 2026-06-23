@@ -30,10 +30,22 @@ export default function MissionControl() {
       const defaultApiUrl = isLocalhost ? 'http://127.0.0.1:8000/api' : 'https://prakshep-api.onrender.com/api';
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || defaultApiUrl;
       // Post the configuration to the backend
+      const backendPayload = {
+        rocket_type: config.vehicle,
+        payload_mass: Number(config.payloadMass),
+        apogee: Number(config.targetApogee),
+        perigee: Number(config.targetPerigee),
+        inclination: Number(config.targetInclination),
+        launch_pad: config.launchPad,
+        weather_profile: config.weatherProfile,
+        relanding_location: config.relandingLocation,
+        weather_date: config.weatherDate || null
+      };
+
       const response = await fetch(`${apiUrl}/simulation/start`, { 
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(config)
+        body: JSON.stringify(backendPayload)
       });
       
       if (!response.ok) {

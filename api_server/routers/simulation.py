@@ -11,14 +11,15 @@ class InitRequest(BaseModel):
     payload_mass: float = 0.0
 
 class MissionConfig(BaseModel):
-    vehicle: str
-    launchPad: str
-    payloadMass: float
-    targetOrbit: str
-    weatherProfile: str
-    targetAltitude: Optional[float] = None
-    targetInclination: Optional[float] = None
-    relandingLocation: Optional[str] = None
+    rocket_type: str
+    payload_mass: float
+    apogee: float
+    perigee: float
+    inclination: float
+    launch_pad: str
+    weather_profile: str
+    relanding_location: Optional[str] = None
+    weather_date: Optional[str] = None
 
 @router.post("/api/simulation/init")
 async def init_sim(req: InitRequest):
@@ -42,9 +43,9 @@ async def start_sim(config: Optional[MissionConfig] = None):
             "NGLV": 5,
             "VIKRAM": 6
         }
-        rtype_val = v_map.get(config.vehicle.upper(), 0)
+        rtype_val = v_map.get(config.rocket_type.upper(), 0)
         rtype = prakshep_core.RocketType(rtype_val)
-        sim_manager.init_sim(rtype, config.payloadMass)
+        sim_manager.init_sim(rtype, config.payload_mass)
     else:
         sim_manager.init_sim()
         
