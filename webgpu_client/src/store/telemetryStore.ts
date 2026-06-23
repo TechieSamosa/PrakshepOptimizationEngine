@@ -44,7 +44,11 @@ export const useTelemetryStore = create<TelemetryState>((set, get) => {
     connect: () => {
       if (ws && ws.readyState === WebSocket.OPEN) return;
       
-      ws = new WebSocket('ws://127.0.0.1:8000/ws/telemetry');
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const host = window.location.host;
+      const wsUrl = process.env.NEXT_PUBLIC_WS_URL || `${protocol}//${host}/ws/telemetry`;
+      
+      ws = new WebSocket(wsUrl);
       
       ws.onopen = () => {
         console.log('WebSocket Connected');
