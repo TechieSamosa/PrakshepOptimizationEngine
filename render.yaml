@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: prakshep-api
+    env: docker
+    dockerfilePath: ./api_server/Dockerfile
+    plan: free
+    region: singapore
+    autoDeploy: true
+    envVars:
+      - key: TICK_RATE_HZ
+        value: "60"
+      - key: ALLOWED_ORIGINS
+        value: "*"

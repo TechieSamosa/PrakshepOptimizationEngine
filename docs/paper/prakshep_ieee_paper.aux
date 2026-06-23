@@ -1,0 +1,107 @@
+\relax 
+\providecommand\hyper@newdestlabel[2]{}
+\providecommand\HyField@AuxAddToFields[1]{}
+\providecommand\HyField@AuxAddToCoFields[2]{}
+\citation{brauer1977post}
+\citation{raffin2021stable}
+\providecommand \oddpage@label [2]{}
+\@writefile{toc}{\contentsline {section}{\numberline {I}Introduction}{1}{section.1}\protected@file@percent }
+\citation{jakob2017pybind11}
+\citation{brockman2016openai}
+\citation{ramirez2018fastapi}
+\@writefile{toc}{\contentsline {section}{\numberline {II}System Architecture}{2}{section.2}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces High-level system architecture of \textit  {Prakshep} showing the data flow from the C++ physics engine through the Python ML layer and FastAPI backend to the Next.js frontend.}}{2}{figure.caption.1}\protected@file@percent }
+\providecommand*\caption@xref[2]{\@setref\relax\@undefined{#1}}
+\newlabel{fig:architecture}{{1}{2}{High-level system architecture of \textit {Prakshep} showing the data flow from the C++ physics engine through the Python ML layer and FastAPI backend to the Next.js frontend}{figure.caption.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {II-A}}C++ Physics Core}{2}{subsection.2.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {II-B}}pybind11 Bridge}{2}{subsection.2.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {II-C}}Python ML/RL Layer}{2}{subsection.2.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {II-D}}FastAPI WebSocket Server}{2}{subsection.2.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {II-E}}Next.js Frontend}{2}{subsection.2.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {III}Mathematical Models}{2}{section.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {III-A}}6-DOF Equations of Motion}{2}{subsection.3.1}\protected@file@percent }
+\newlabel{eq:translational}{{1}{2}{6-DOF Equations of Motion}{equation.1}{}}
+\newlabel{eq:rotational}{{2}{2}{6-DOF Equations of Motion}{equation.2}{}}
+\newlabel{eq:state_vector}{{3}{2}{6-DOF Equations of Motion}{equation.3}{}}
+\citation{vallado2013fundamentals}
+\citation{nasa1976atmosphere}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {III-B}}Runge-Kutta 4th Order Integration}{3}{subsection.3.2}\protected@file@percent }
+\newlabel{eq:rk4_k1}{{4}{3}{Runge-Kutta 4th Order Integration}{equation.4}{}}
+\newlabel{eq:rk4_k2}{{5}{3}{Runge-Kutta 4th Order Integration}{equation.5}{}}
+\newlabel{eq:rk4_k3}{{6}{3}{Runge-Kutta 4th Order Integration}{equation.6}{}}
+\newlabel{eq:rk4_k4}{{7}{3}{Runge-Kutta 4th Order Integration}{equation.7}{}}
+\newlabel{eq:rk4_update}{{8}{3}{Runge-Kutta 4th Order Integration}{equation.8}{}}
+\newlabel{eq:quat_rate}{{9}{3}{Runge-Kutta 4th Order Integration}{equation.9}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {III-C}}J2 Gravity Model}{3}{subsection.3.3}\protected@file@percent }
+\newlabel{sec:j2}{{\mbox  {III-C}}{3}{J2 Gravity Model}{subsection.3.3}{}}
+\newlabel{eq:j2_x}{{10}{3}{J2 Gravity Model}{equation.10}{}}
+\newlabel{eq:j2_y}{{11}{3}{J2 Gravity Model}{equation.11}{}}
+\newlabel{eq:j2_z}{{12}{3}{J2 Gravity Model}{equation.12}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {III-D}}US Standard Atmosphere 1976}{3}{subsection.3.4}\protected@file@percent }
+\newlabel{sec:atmo}{{\mbox  {III-D}}{3}{US Standard Atmosphere 1976}{subsection.3.4}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {I}{\ignorespaces US Standard Atmosphere 1976 Layer Parameters}}{3}{table.caption.2}\protected@file@percent }
+\newlabel{tab:atmo_layers}{{I}{3}{US Standard Atmosphere 1976 Layer Parameters}{table.caption.2}{}}
+\newlabel{eq:atmo_T}{{13}{3}{US Standard Atmosphere 1976}{equation.13}{}}
+\newlabel{eq:atmo_P_grad}{{14}{3}{US Standard Atmosphere 1976}{equation.14}{}}
+\newlabel{eq:atmo_rho}{{15}{3}{US Standard Atmosphere 1976}{equation.15}{}}
+\newlabel{eq:atmo_P_iso}{{16}{3}{US Standard Atmosphere 1976}{equation.16}{}}
+\newlabel{eq:atmo_rho_iso}{{17}{3}{US Standard Atmosphere 1976}{equation.17}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {III-E}}Aerodynamic Drag}{3}{subsection.3.5}\protected@file@percent }
+\newlabel{sec:aero}{{\mbox  {III-E}}{3}{Aerodynamic Drag}{subsection.3.5}{}}
+\newlabel{eq:drag}{{18}{3}{Aerodynamic Drag}{equation.18}{}}
+\citation{schulman2017proximal}
+\citation{haarnoja2018soft}
+\citation{hochreiter1997long}
+\newlabel{eq:cd_mach}{{19}{4}{Aerodynamic Drag}{equation.19}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {III-F}}Propulsion Model}{4}{subsection.3.6}\protected@file@percent }
+\newlabel{sec:propulsion}{{\mbox  {III-F}}{4}{Propulsion Model}{subsection.3.6}{}}
+\newlabel{eq:thrust}{{20}{4}{Propulsion Model}{equation.20}{}}
+\newlabel{eq:isp_altitude}{{21}{4}{Propulsion Model}{equation.21}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {IV}Reinforcement Learning Methodology}{4}{section.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {IV-A}}Problem Formulation}{4}{subsection.4.1}\protected@file@percent }
+\newlabel{eq:state_space}{{22}{4}{Problem Formulation}{equation.22}{}}
+\newlabel{eq:action_space}{{23}{4}{Problem Formulation}{equation.23}{}}
+\newlabel{eq:reward}{{24}{4}{Problem Formulation}{equation.24}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {IV-B}}PPO and SAC Agents}{4}{subsection.4.2}\protected@file@percent }
+\newlabel{eq:ppo}{{25}{4}{PPO and SAC Agents}{equation.25}{}}
+\citation{jakob2017pybind11}
+\citation{isro_pslv_manual,isro_gslv_manual}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {IV-C}}LSTM Anomaly Detection}{5}{subsection.4.3}\protected@file@percent }
+\newlabel{eq:anomaly}{{27}{5}{LSTM Anomaly Detection}{equation.27}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {V}Implementation}{5}{section.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {V-A}}C++ Engine Performance}{5}{subsection.5.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {V-B}}pybind11 Binding Strategy}{5}{subsection.5.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {V-C}}WebSocket Streaming}{5}{subsection.5.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {V-D}}High-Fidelity WebGPU Visualization}{5}{subsection.5.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {V-E}}Zero-Cost Global Telemetry Mapping}{5}{subsection.5.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {VI}Launch Vehicle Configurations}{5}{section.6}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {II}{\ignorespaces Supported ISRO Launch Vehicle Configurations}}{5}{table.caption.3}\protected@file@percent }
+\newlabel{tab:vehicles}{{II}{5}{Supported ISRO Launch Vehicle Configurations}{table.caption.3}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {VII}Results and Discussion}{6}{section.7}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces Simulated altitude profile for a PSLV-XL mission to SSO. The point of maximum dynamic pressure (Max-Q) is highlighted.}}{6}{figure.caption.4}\protected@file@percent }
+\newlabel{fig:altitude}{{2}{6}{Simulated altitude profile for a PSLV-XL mission to SSO. The point of maximum dynamic pressure (Max-Q) is highlighted}{figure.caption.4}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces Inertial velocity versus altitude, demonstrating the steep velocity increase post-Max-Q during orbital injection.}}{6}{figure.caption.5}\protected@file@percent }
+\newlabel{fig:velocity}{{3}{6}{Inertial velocity versus altitude, demonstrating the steep velocity increase post-Max-Q during orbital injection}{figure.caption.5}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces Dynamic pressure profile over time. The Max-Q constraint is a critical component of the RL reward shaping.}}{6}{figure.caption.6}\protected@file@percent }
+\newlabel{fig:maxq}{{4}{6}{Dynamic pressure profile over time. The Max-Q constraint is a critical component of the RL reward shaping}{figure.caption.6}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {VIII}Conclusion}{6}{section.8}\protected@file@percent }
+\bibcite{butcher2003numerical}{1}
+\bibcite{vallado2013fundamentals}{2}
+\bibcite{nasa1976atmosphere}{3}
+\bibcite{schulman2017proximal}{4}
+\bibcite{haarnoja2018soft}{5}
+\bibcite{isro_pslv_manual}{6}
+\bibcite{isro_gslv_manual}{7}
+\bibcite{grieves2002digital}{8}
+\bibcite{jakob2017pybind11}{9}
+\bibcite{cabello2010threejs}{10}
+\bibcite{ramirez2018fastapi}{11}
+\bibcite{brockman2016openai}{12}
+\bibcite{hochreiter1997long}{13}
+\bibcite{raffin2021stable}{14}
+\bibcite{diebel2006representing}{15}
+\bibcite{brauer1977post}{16}
+\bibcite{wie2008spacecraft}{17}
+\bibcite{sutton2018reinforcement}{18}
+\@writefile{toc}{\contentsline {section}{References}{7}{section*.7}\protected@file@percent }
+\gdef \@abspage@last{7}

@@ -1,0 +1,16 @@
+[build-system]
+requires = ["scikit-build-core", "pybind11"]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "prakshep_core"
+version = "1.0.0"
+description = "Prakshep C++ 6-DOF Physics Engine"
+authors = [
+    { name = "Prakshep Team" }
+]
+requires-python = ">=3.10"
+
+[tool.scikit-build]
+cmake.build-type = "Release"
+ninja.make-fallback = true

@@ -1,0 +1,167 @@
+# ============================================================================
+# Prakshep Optimization Engine — .gitignore
+# Comprehensive exclusions for C++ / Python / Node.js / Full-Stack project
+# ============================================================================
+
+# ──────────────────────────────────────────────────────────────────────────────
+#  C++ Build Artifacts
+# ──────────────────────────────────────────────────────────────────────────────
+build/
+cmake-build-*/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+*.o
+*.obj
+*.so
+*.so.*
+*.dll
+*.dylib
+*.pyd
+*.lib
+*.a
+*.exp
+*.ilk
+*.pdb
+*.idb
+*.dSYM/
+*.exe
+*.out
+compile_commands.json
+
+# ──────────────────────────────────────────────────────────────────────────────
+#  Python
+# ──────────────────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+*.pyo
+*.pyd
+.eggs/
+*.egg-info/
+*.egg
+dist/
+sdist/
+wheels/
+*.whl
+.env
+.venv/
+venv/
+ENV/
+env/
+pip-log.txt
+pip-delete-this-directory.txt
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+.hypothesis/
+.tox/
+.nox/
+
+# ──────────────────────────────────────────────────────────────────────────────
+#  Node.js / Next.js
+# ──────────────────────────────────────────────────────────────────────────────
+node_modules/
+.next/
+out/
+.turbo/
+.vercel/
+.nuxt/
+.cache/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# ──────────────────────────────────────────────────────────────────────────────
+#  IDE & Editor
+# ──────────────────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*.swn
+*~
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+.project
+.classpath
+.settings/
+*.sublime-workspace
+*.sublime-project
+
+# ──────────────────────────────────────────────────────────────────────────────
+#  Operating System
+# ──────────────────────────────────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+
+# ──────────────────────────────────────────────────────────────────────────────
+#  Project-Specific Data & Storage
+# ──────────────────────────────────────────────────────────────────────────────
+data/
+models/
+*.parquet
+*.hdf5
+*.h5
+*.pkl
+*.pickle
+*.npy
+*.npz
+minio-data/
+public/cesium/
+*.onnx
+*.pt
+*.pth
+checkpoints/
+wandb/
+mlruns/
+tensorboard_logs/
+
+# ──────────────────────────────────────────────────────────────────────────────
+#  Logs & Temporary Files
+# ──────────────────────────────────────────────────────────────────────────────
+*.log
+logs/
+tmp/
+temp/
+*.tmp
+*.bak
+*.orig
+
+# ──────────────────────────────────────────────────────────────────────────────
+#  Secrets & Environment
+# ──────────────────────────────────────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.cert
+secrets/

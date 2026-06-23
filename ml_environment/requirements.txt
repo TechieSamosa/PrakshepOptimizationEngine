@@ -1,0 +1,6 @@
+gymnasium==0.29.1
+stable-baselines3==2.2.1
+tensorboard
+torch>=2.0.0
+pyarrow>=14.0.1
+pandas>=2.1.4

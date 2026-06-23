@@ -1,0 +1,62 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&family=Inter:wght@300;400;600;700&display=swap');
+@import "tailwindcss";
+
+@theme inline {
+  --color-background: #0B0F19; /* Deep space black */
+  --color-foreground: #E2E8F0;
+  
+  --color-panel: #141B2D; /* Dark slate gray for panels */
+  --color-panel-border: #1E293B;
+
+  --color-accent-green: #39FF14; /* Neon green */
+  --color-accent-amber: #FFB000; /* Warning amber */
+  --color-accent-red: #FF2A2A;   /* Stark red */
+  
+  --color-accent-cyan: #00F0FF; /* Glow cyan */
+
+  --font-sans: 'Inter', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans);
+  margin: 0;
+  padding: 0;
+  overflow: hidden; /* App is a fullscreen dashboard */
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Custom scrollbar for logs */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-panel-border);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #334155;
+}
+
+/* Cesium map overrides */
+.cesium-viewer-bottom {
+  display: none !important; /* Hide cesium ion logo since we use OSM */
+}
+.cesium-widget-credits {
+  display: none !important;
+}
+
+/* Utility for numbers to prevent jittering */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
