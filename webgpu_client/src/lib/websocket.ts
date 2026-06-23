@@ -38,6 +38,12 @@ export class PrakshepWebSocket {
     this.intentionalClose = false;
     this.updateStatus(this.reconnectAttempts > 0 ? 'RECONNECTING' : 'CONNECTING');
     
+    if (!this.url) {
+      console.error("[WS] WebSocket URL is empty or undefined. Aborting connection.");
+      this.updateStatus('DISCONNECTED');
+      return;
+    }
+
     try {
       this.ws = new WebSocket(this.url);
       

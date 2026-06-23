@@ -30,14 +30,20 @@ export default function MissionControl() {
       const defaultApiUrl = isLocalhost ? 'http://127.0.0.1:8000/api' : 'https://prakshep-api.onrender.com/api';
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || defaultApiUrl;
       // Post the configuration to the backend
-      await fetch(`${apiUrl}/simulation/start`, { 
+      const response = await fetch(`${apiUrl}/simulation/start`, { 
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(config)
       });
+      
+      if (!response.ok) {
+        throw new Error(`Backend responded with status: ${response.status}`);
+      }
+      
       setIsLaunched(true);
-    } catch (e) {
-      console.error("Failed to start simulation", e);
+    } catch (error) {
+      console.error("FATAL: Mission initialization failed:", error);
+      alert(`Failed to initialize data link: ${error instanceof Error ? error.message : 'Backend offline'}`);
     }
   };
 
