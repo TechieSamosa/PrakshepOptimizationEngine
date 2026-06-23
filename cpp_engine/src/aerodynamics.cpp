@@ -201,15 +201,37 @@ Vec3 compute_grid_fin_force(const StateVector& state, const AtmosphereState& atm
     double mach = v_rel_mag / atm.speed_of_sound;
     double q = 0.5 * atm.density * v_rel_mag * v_rel_mag;
 
-    // Simplified Grid Fin Aerodynamic model
-    // Supersonic grid fins have massive wave drag, but generate lift based on angle of attack.
-    // Cd peaks strongly at transonic speeds (Mach 1.0 - 1.3)
-    double base_cd = (mach > 0.8 && mach < 1.5) ? 1.5 : (mach >= 1.5 ? 0.8 : 0.4);
+    // ------------------------------------------------------------------------
+    // Waffle-Iron Grid Fin Transonic Flow Choking Model
+    // ------------------------------------------------------------------------
+    // Grid fins experience severe drag penalties in the transonic regime (Mach 0.8 - 1.2)
+    // because the bow shocks off individual lattice walls intersect, choking the flow
+    // through the grid cells. This causes the fin to act like a solid flat plate.
+    // At supersonic speeds (Mach > 1.3), the shock wave attaches to the leading edges,
+    // flow passes through the cells again, and drag drops while control authority returns.
+    // ------------------------------------------------------------------------
     
-    // Induced drag and lift from angle of attack
-    double lift_coefficient = 2.0 * M_PI * angle_of_attack; // Thin airfoil theory approx
-    if (mach > 1.0) {
-        lift_coefficient = 4.0 * angle_of_attack / std::sqrt(mach * mach - 1.0); // Supersonic linear theory
+    double base_cd = 0.4;
+    if (mach >= 0.8 && mach <= 1.2) {
+        // Transonic Choking: Sharp drag spike as flow chokes
+        double transonic_factor = std::sin((mach - 0.8) / 0.4 * M_PI);
+        base_cd = 0.4 + 1.2 * transonic_factor; // Peaks at 1.6
+    } else if (mach > 1.2 && mach < 1.5) {
+        // Shock attachment transition
+        base_cd = 1.6 - (mach - 1.2) / 0.3 * 0.8; // Drops from 1.6 to 0.8
+    } else if (mach >= 1.5) {
+        // Supersonic flow
+        base_cd = 0.8;
+    }
+    
+    // Induced drag and lift from actuation angle (angle_of_attack)
+    double lift_coefficient = 2.0 * M_PI * angle_of_attack; // Thin airfoil theory
+    if (mach > 0.8 && mach <= 1.2) {
+        // Control authority drops massively during choking
+        lift_coefficient *= 0.3; 
+    } else if (mach > 1.2) {
+        // Supersonic linear theory
+        lift_coefficient = 4.0 * angle_of_attack / std::sqrt(mach * mach - 1.0);
     }
     
     double drag_coefficient = base_cd + std::abs(angle_of_attack) * 0.5;

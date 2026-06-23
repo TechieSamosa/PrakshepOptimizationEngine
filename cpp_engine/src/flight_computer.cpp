@@ -57,8 +57,9 @@ FlightComputer::FlightComputer(const RocketConfig& config)
     , override_gimbal_pitch_(0.0)
     , override_gimbal_yaw_(0.0)
     , override_throttle_(1.0)
+    , is_pad_3_(false)
 {
-    // All members initialized via initializer list
+    // Pad 3 direct azimuth check is determined via coordinates in Simulation but we can flag it here if needed later
 }
 
 // ============================================================================
@@ -226,6 +227,60 @@ FlightCommand FlightComputer::compute(const StateVector& state, int current_stag
     cmd.abort          = false;
 
     // ------------------------------------------------------------------
+    // Coast Phase Check (Upper stages prior to apogee insertion)
+    // ------------------------------------------------------------------
+    const double position_magnitude = state.position.norm();
+    const double altitude = position_magnitude - constants::R_EARTH;
+    
+    // For specific vehicles, if we are waiting for apogee, set thrust to 0
+    bool is_coasting = false;
+    if (altitude > 130000.0 && state.velocity.norm() < 7200.0 && state.velocity.dot(state.position) > 0) {
+        // We are ascending above 130km but not orbital yet.
+        // A true mission planner would define the exact coast windows.
+        // For simulation, if we reach 150km and want 500km apogee, we coast.
+        // is_coasting = true; (Simulated later via explicit mission timelines)
+    }
+
+    // ------------------------------------------------------------------
+    // Hoverslam / Suicide Burn Equation (VTVL EDL Physics)
+    // ------------------------------------------------------------------
+    bool is_edl_active = false;
+    if (state.velocity.dot(state.position) < 0 && altitude < 50000.0) {
+        // Vehicle is descending
+        if (config_->type == RocketType::NGLV || config_->type == RocketType::VIKRAM) {
+            is_edl_active = true;
+            // Simplified Hoverslam Ignition Time Equation
+            // V_f^2 = V_i^2 + 2 * a_net * d
+            // a_net = (T_max / m) - g + (0.5 * rho * v^2 * Cd * A / m)
+            double current_mass = state.mass;
+            double max_thrust = 0.0;
+            if (current_stage < (int)config_->stages.size()) {
+                max_thrust = config_->stages[current_stage].thrust_sea_level;
+            }
+            if (max_thrust > 0) {
+                double g = 9.81;
+                double a_thrust = max_thrust / current_mass;
+                double a_net = a_thrust - g; // Ignoring aero drag for conservative estimate
+                
+                // Distance to zero velocity
+                double v_z = std::abs(state.velocity.dot(state.position.normalized())); // Vertical velocity magnitude
+                double required_burn_distance = (v_z * v_z) / (2.0 * a_net);
+                
+                if (altitude <= required_burn_distance * 1.1) { // 10% safety margin for ignition
+                    cmd.throttle = 1.0;
+                } else {
+                    cmd.throttle = 0.0; // Free-fall
+                }
+            } else {
+                cmd.throttle = 0.0;
+            }
+            
+            // Grid fin steering towards target would go here
+            // We expose grid fin angles to RL agent via TVC override
+        }
+    }
+
+    // ------------------------------------------------------------------
     // 1. TVC override – bypass all guidance logic
     // ------------------------------------------------------------------
     if (tvc_override_active_) {
@@ -238,8 +293,7 @@ FlightCommand FlightComputer::compute(const StateVector& state, int current_stag
     // ------------------------------------------------------------------
     // 2. Commanded pitch from the gravity turn program
     // ------------------------------------------------------------------
-    const double position_magnitude = state.position.norm();
-    const double altitude = position_magnitude - constants::R_EARTH;
+
     const double desired_pitch_rad = compute_pitch_angle(state.time, altitude);
 
     // ------------------------------------------------------------------
@@ -296,9 +350,20 @@ FlightCommand FlightComputer::compute(const StateVector& state, int current_stag
     // ------------------------------------------------------------------
     // 6. Assemble flight command
     // ------------------------------------------------------------------
-    cmd.throttle     = 1.0;          // Full throttle (default for unpowered guidance)
-    cmd.gimbal_pitch = gimbal_cmd;   // Pitch axis gimbal [rad]
-    cmd.gimbal_yaw   = 0.0;          // No yaw steering (2D trajectory)
+    if (!is_edl_active && !is_coasting) {
+        cmd.throttle     = 1.0;          // Full throttle (default for unpowered guidance)
+        cmd.gimbal_pitch = gimbal_cmd;   // Pitch axis gimbal [rad]
+        cmd.gimbal_yaw   = 0.0;          // No yaw steering (2D trajectory)
+    } else if (is_coasting) {
+        cmd.throttle = 0.0;
+        cmd.gimbal_pitch = 0.0;
+        cmd.gimbal_yaw = 0.0;
+    } else if (is_edl_active) {
+        // Throttle set by Hoverslam logic above
+        // Gimbal used to maintain retrograde attitude
+        cmd.gimbal_pitch = gimbal_cmd * 0.5; // Reduced gain during descent
+        cmd.gimbal_yaw = 0.0;
+    }
 
     return cmd;
 }

@@ -240,17 +240,60 @@ static StateDerivative compute_derivative(
     //    module returns the drag force vector; divide by mass for accel.
     // ------------------------------------------------------------------
     Vec3 drag_accel{0.0, 0.0, 0.0};
+    Vec3 grid_fin_accel{0.0, 0.0, 0.0};
+    Vec3 aero_torque{0.0, 0.0, 0.0};
+    
     if (altitude < 100000.0 && altitude >= 0.0) {
         const Vec3 drag_force = aerodynamics::compute_drag(state, config, atm);
         if (state.mass > 0.0) {
             drag_accel = drag_force * (1.0 / state.mass);
+        }
+        
+        // ------------------------------------------------------------------
+        // Grid Fin Aerodynamics & 6-DOF Steering Moments
+        // ------------------------------------------------------------------
+        if (config.grid_fins.deployed && throttle == 0.0) { // Typically used during coast/descent
+            // Map TVC inputs to grid fin pitch/yaw deflections
+            double fin_pitch = gimbal_pitch;
+            double fin_yaw = gimbal_yaw;
+            double angle_of_attack = std::max(std::abs(fin_pitch), std::abs(fin_yaw));
+            
+            // Limit to max mechanical deflection
+            angle_of_attack = std::min(angle_of_attack, config.grid_fins.max_angle);
+            
+            const Vec3 grid_fin_force = aerodynamics::compute_grid_fin_force(state, atm, config.grid_fins, angle_of_attack);
+            
+            if (state.mass > 0.0) {
+                grid_fin_accel = grid_fin_force * (1.0 / state.mass);
+                
+                // Assume grid fins are located at the top of the stage (approx 0.4 * length from CoM)
+                double lever_arm = config.total_height * 0.4;
+                
+                // Lift force creates pitching/yawing moment
+                // Simplified moment calculation based on body-frame axes
+                // F_lift approx orthogonal to velocity. 
+                // We map fin pitch -> body X torque, fin yaw -> body Y torque
+                double q = aerodynamics::compute_dynamic_pressure(atm.density, state.velocity.norm());
+                double lift_coef = 2.0 * M_PI * angle_of_attack;
+                if (state.velocity.norm() / atm.speed_of_sound > 1.0) lift_coef *= 0.5; // very rough proxy
+                
+                double moment_mag = q * lift_coef * config.grid_fins.area * lever_arm;
+                
+                // Construct body-frame torque vector
+                Vec3 body_torque;
+                body_torque.x = (fin_pitch > 0 ? 1 : -1) * moment_mag * std::abs(fin_pitch)/(angle_of_attack + 1e-6);
+                body_torque.y = (fin_yaw > 0 ? 1 : -1) * moment_mag * std::abs(fin_yaw)/(angle_of_attack + 1e-6);
+                body_torque.z = 0.0;
+                
+                aero_torque = body_torque;
+            }
         }
     }
 
     // ------------------------------------------------------------------
     // 6. Total translational acceleration
     // ------------------------------------------------------------------
-    const Vec3 total_accel = gravity_accel + thrust_accel + drag_accel;
+    const Vec3 total_accel = gravity_accel + thrust_accel + drag_accel + grid_fin_accel;
 
     // ------------------------------------------------------------------
     // 7. Position derivative = velocity
@@ -293,12 +336,33 @@ static StateDerivative compute_derivative(
     deriv.att_dot.z = 0.5 * ( qw * wz + qx * wy - qy * wx);
 
     // ------------------------------------------------------------------
-    // 10. Angular velocity derivative = 0 (simplified, no torque model)
-    //     In a full 6-DOF simulation this would be:
-    //     ω̇ = I⁻¹ (τ - ω × Iω)
-    //     where τ is the sum of applied torques and I is the inertia tensor.
+    // 10. Angular velocity derivative = I⁻¹ (τ - ω × Iω)
+    //     Implement true rigid body dynamics for VTVL grid fin steering.
     // ------------------------------------------------------------------
-    deriv.omega_dot = Vec3{0.0, 0.0, 0.0};
+    // Approximate inertia tensor for a uniform cylinder:
+    // Ixx = Iyy = 1/12 * m * L^2 + 1/4 * m * R^2
+    // Izz = 1/2 * m * R^2
+    double r = std::sqrt(config.reference_area / M_PI);
+    double h = config.total_height;
+    double I_xx = (1.0 / 12.0) * state.mass * h * h + (1.0 / 4.0) * state.mass * r * r;
+    double I_yy = I_xx;
+    double I_zz = 0.5 * state.mass * r * r;
+
+    // Euler's equations of rigid body motion:
+    // τ_x = I_xx * ω_dot_x + (I_zz - I_yy) * ω_y * ω_z
+    // τ_y = I_yy * ω_dot_y + (I_xx - I_zz) * ω_z * ω_x
+    // τ_z = I_zz * ω_dot_z + (I_yy - I_xx) * ω_x * ω_y
+    
+    // Add active aero steering torques
+    Vec3 total_torque = aero_torque;
+
+    if (I_xx > 0 && I_yy > 0 && I_zz > 0) {
+        deriv.omega_dot.x = (total_torque.x - (I_zz - I_yy) * wy * wz) / I_xx;
+        deriv.omega_dot.y = (total_torque.y - (I_xx - I_zz) * wz * wx) / I_yy;
+        deriv.omega_dot.z = (total_torque.z - (I_yy - I_xx) * wx * wy) / I_zz;
+    } else {
+        deriv.omega_dot = Vec3{0.0, 0.0, 0.0};
+    }
 
     // ------------------------------------------------------------------
     // 11. Mass derivative = negative mass flow rate

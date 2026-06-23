@@ -542,6 +542,150 @@ RocketConfig create_lvm3(double payload_mass) {
 }
 
 // ============================================================================
+//  SSLV Configuration
+// ============================================================================
+RocketConfig create_sslv(double payload_mass) {
+    RocketConfig config;
+    config.name          = "SSLV";
+    config.type          = RocketType::SSLV;
+    config.payload_mass  = payload_mass;
+    config.fairing_mass  = 250.0;
+    config.reference_area = cross_section_area(2.0);
+    config.total_height  = 34.0;
+    config.mach_breakpoints = standard_mach_breakpoints();
+    config.cd_values        = standard_cd_values();
+
+    config.stages.resize(4);
+    // SS1 (Solid)
+    {
+        StageConfig& s = config.stages[0];
+        s.name = "SS1"; s.thrust_vacuum = 2600000.0; s.thrust_sea_level = 2300000.0;
+        s.isp_vacuum = 260.0; s.isp_sea_level = 235.0; s.propellant_mass = 87000.0;
+        s.structural_mass = 12000.0; s.burn_time = 117.0; s.gimbal_range = 0.035;
+        s.reference_area = cross_section_area(2.0); s.is_solid = true; s.ground_lit = true;
+    }
+    // SS2 (Solid)
+    {
+        StageConfig& s = config.stages[1];
+        s.name = "SS2"; s.thrust_vacuum = 240000.0; s.thrust_sea_level = 240000.0;
+        s.isp_vacuum = 275.0; s.isp_sea_level = 275.0; s.propellant_mass = 7700.0;
+        s.structural_mass = 1100.0; s.burn_time = 114.0; s.gimbal_range = 0.035;
+        s.reference_area = cross_section_area(2.0); s.is_solid = true;
+    }
+    // SS3 (Solid)
+    {
+        StageConfig& s = config.stages[2];
+        s.name = "SS3"; s.thrust_vacuum = 160000.0; s.thrust_sea_level = 160000.0;
+        s.isp_vacuum = 280.0; s.isp_sea_level = 280.0; s.propellant_mass = 4500.0;
+        s.structural_mass = 700.0; s.burn_time = 105.0; s.gimbal_range = 0.035;
+        s.reference_area = cross_section_area(2.0); s.is_solid = true;
+    }
+    // VTM (Liquid)
+    {
+        StageConfig& s = config.stages[3];
+        s.name = "VTM"; s.thrust_vacuum = 800.0; s.thrust_sea_level = 800.0;
+        s.isp_vacuum = 290.0; s.isp_sea_level = 290.0; s.propellant_mass = 50.0;
+        s.structural_mass = 20.0; s.burn_time = 200.0; s.gimbal_range = 0.05;
+        s.reference_area = cross_section_area(2.0); s.is_solid = false;
+    }
+    return config;
+}
+
+// ============================================================================
+//  HSLV Configuration
+// ============================================================================
+RocketConfig create_hslv(double payload_mass) {
+    // Scaled up LVM3 concept
+    RocketConfig config = create_lvm3(payload_mass);
+    config.name = "HSLV";
+    config.type = RocketType::HSLV;
+    config.stages[0].thrust_vacuum *= 1.5;
+    config.stages[0].thrust_sea_level *= 1.5;
+    return config;
+}
+
+// ============================================================================
+//  NGLV Configuration
+// ============================================================================
+RocketConfig create_nglv(double payload_mass) {
+    RocketConfig config;
+    config.name          = "NGLV";
+    config.type          = RocketType::NGLV;
+    config.payload_mass  = payload_mass;
+    config.fairing_mass  = 4000.0;
+    config.reference_area = cross_section_area(5.0);
+    config.total_height  = 65.0;
+    config.mach_breakpoints = standard_mach_breakpoints();
+    config.cd_values        = standard_cd_values();
+
+    config.stages.resize(2);
+    // Stage 1 (Semi-Cryo, Reusable)
+    {
+        StageConfig& s = config.stages[0];
+        s.name = "SC120"; s.thrust_vacuum = 6000000.0; s.thrust_sea_level = 5400000.0;
+        s.isp_vacuum = 310.0; s.isp_sea_level = 280.0; s.propellant_mass = 350000.0;
+        s.structural_mass = 35000.0; s.burn_time = 180.0; s.gimbal_range = 0.08;
+        s.reference_area = cross_section_area(5.0); s.is_solid = false; s.ground_lit = true;
+    }
+    
+    // Configure Reusable Grid Fins for SC120 Stage 1
+    config.grid_fins.area = 2.5; // Large titanium grid fins
+    config.grid_fins.max_angle = 0.523; // 30 degrees
+    config.grid_fins.deployed = true; // Assume deployed on descent
+    // Stage 2 (Cryo)
+    {
+        StageConfig& s = config.stages[1];
+        s.name = "C32"; s.thrust_vacuum = 250000.0; s.thrust_sea_level = 250000.0;
+        s.isp_vacuum = 455.0; s.isp_sea_level = 455.0; s.propellant_mass = 32000.0;
+        s.structural_mass = 4000.0; s.burn_time = 550.0; s.gimbal_range = 0.05;
+        s.reference_area = cross_section_area(5.0); s.is_solid = false;
+    }
+    return config;
+}
+
+// ============================================================================
+//  Vikram I Configuration
+// ============================================================================
+RocketConfig create_vikram(double payload_mass) {
+    RocketConfig config;
+    config.name          = "Vikram-I";
+    config.type          = RocketType::VIKRAM;
+    config.payload_mass  = payload_mass;
+    config.fairing_mass  = 100.0;
+    config.reference_area = cross_section_area(1.5);
+    config.total_height  = 20.0;
+    config.mach_breakpoints = standard_mach_breakpoints();
+    config.cd_values        = standard_cd_values();
+
+    config.stages.resize(3);
+    // Stage 1 (Solid)
+    {
+        StageConfig& s = config.stages[0];
+        s.name = "Kalam-100"; s.thrust_vacuum = 500000.0; s.thrust_sea_level = 450000.0;
+        s.isp_vacuum = 265.0; s.isp_sea_level = 240.0; s.propellant_mass = 15000.0;
+        s.structural_mass = 2000.0; s.burn_time = 80.0; s.gimbal_range = 0.04;
+        s.reference_area = cross_section_area(1.5); s.is_solid = true; s.ground_lit = true;
+    }
+    // Stage 2 (Solid)
+    {
+        StageConfig& s = config.stages[1];
+        s.name = "Kalam-25"; s.thrust_vacuum = 100000.0; s.thrust_sea_level = 100000.0;
+        s.isp_vacuum = 280.0; s.isp_sea_level = 280.0; s.propellant_mass = 4000.0;
+        s.structural_mass = 600.0; s.burn_time = 110.0; s.gimbal_range = 0.04;
+        s.reference_area = cross_section_area(1.5); s.is_solid = true;
+    }
+    // Stage 3 (Liquid OMV)
+    {
+        StageConfig& s = config.stages[2];
+        s.name = "Raman-OMV"; s.thrust_vacuum = 5000.0; s.thrust_sea_level = 5000.0;
+        s.isp_vacuum = 310.0; s.isp_sea_level = 310.0; s.propellant_mass = 500.0;
+        s.structural_mass = 100.0; s.burn_time = 300.0; s.gimbal_range = 0.05;
+        s.reference_area = cross_section_area(1.5); s.is_solid = false;
+    }
+    return config;
+}
+
+// ============================================================================
 //  Generic factory dispatcher
 // ============================================================================
 
@@ -568,6 +712,22 @@ RocketConfig create(RocketType type, double payload_mass) {
         case RocketType::LVM3: {
             const double mass = (payload_mass > 0.0) ? payload_mass : 4000.0;
             return create_lvm3(mass);
+        }
+        case RocketType::SSLV: {
+            const double mass = (payload_mass > 0.0) ? payload_mass : 500.0;
+            return create_sslv(mass);
+        }
+        case RocketType::HSLV: {
+            const double mass = (payload_mass > 0.0) ? payload_mass : 10000.0;
+            return create_hslv(mass);
+        }
+        case RocketType::NGLV: {
+            const double mass = (payload_mass > 0.0) ? payload_mass : 20000.0;
+            return create_nglv(mass);
+        }
+        case RocketType::VIKRAM: {
+            const double mass = (payload_mass > 0.0) ? payload_mass : 300.0;
+            return create_vikram(mass);
         }
         default:
             throw std::invalid_argument(

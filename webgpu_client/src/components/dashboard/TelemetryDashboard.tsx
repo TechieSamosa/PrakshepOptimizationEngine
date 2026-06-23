@@ -19,7 +19,9 @@ export default function TelemetryDashboard() {
       velocityKms: frame.velocity_magnitude / 1000,
       rangeKm: frame.downrange_distance / 1000,
       lat: frame.latitude,
-      lon: frame.longitude
+      lon: frame.longitude,
+      gForce: frame.acceleration_magnitude / 9.80665,
+      qkPa: frame.dynamic_pressure / 1000,
     }));
   }, [history]);
 
@@ -66,8 +68,8 @@ export default function TelemetryDashboard() {
         </div>
       </div>
 
-      {/* Main 3-Panel Layout */}
-      <div className="flex-1 w-full grid grid-cols-3 gap-2 p-2 z-10">
+      {/* Main 4-Panel Layout */}
+      <div className="flex-1 w-full grid grid-cols-4 gap-2 p-2 z-10">
         
         {/* Panel 1: Time vs Alt & Time vs Vel */}
         <div className="bg-[#000015]/80 backdrop-blur-md border border-gray-800 rounded p-2 flex flex-col relative overflow-hidden pointer-events-auto shadow-lg">
@@ -105,7 +107,26 @@ export default function TelemetryDashboard() {
           </div>
         </div>
 
-        {/* Panel 3: Ground Trace (Lat vs Lon) */}
+        {/* Panel 3: G-Force vs Q-Pressure (Dual Axis) */}
+        <div className="bg-[#000015]/80 backdrop-blur-md border border-gray-800 rounded p-2 flex flex-col relative overflow-hidden pointer-events-auto shadow-lg">
+          <div className="absolute inset-0 bg-[linear-gradient(rgba(0,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(0,255,255,0.03)_1px,transparent_1px)] bg-[size:20px_20px] pointer-events-none" />
+          <div className="text-yellow-500 text-xs font-bold tracking-widest mb-2 z-10 border-b border-gray-800 pb-1">AERODYNAMICS (G-FORCE VS Q-PRESSURE)</div>
+          <div className="flex-1 w-full h-full z-10">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+                <XAxis dataKey="time" type="number" domain={['auto', 'auto']} tickFormatter={(v) => `T+${Math.floor(v)}s`} stroke="#4b5563" tick={{fontSize: 10, fill: '#9ca3af'}} />
+                <YAxis yAxisId="left" stroke="#ef4444" tick={{fontSize: 10, fill: '#ef4444'}} />
+                <YAxis yAxisId="right" orientation="right" stroke="#8b5cf6" tick={{fontSize: 10, fill: '#8b5cf6'}} />
+                <Tooltip contentStyle={{backgroundColor: '#000015', border: '1px solid #374151', fontSize: '10px'}} labelStyle={{color: '#9ca3af'}} />
+                <Line yAxisId="left" type="monotone" dataKey="gForce" stroke="#ef4444" dot={false} strokeWidth={2} name="G-Force (g)" isAnimationActive={false} />
+                <Line yAxisId="right" type="monotone" dataKey="qkPa" stroke="#8b5cf6" dot={false} strokeWidth={2} name="Dyn. Pres. (kPa)" isAnimationActive={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Panel 4: Ground Trace (Lat vs Lon) */}
         <div className="bg-[#000015]/80 backdrop-blur-md border border-gray-800 rounded p-2 flex flex-col relative overflow-hidden pointer-events-auto shadow-lg">
           <div className="absolute inset-0 bg-[linear-gradient(rgba(0,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(0,255,255,0.03)_1px,transparent_1px)] bg-[size:20px_20px] pointer-events-none" />
           <div className="text-yellow-500 text-xs font-bold tracking-widest mb-2 z-10 border-b border-gray-800 pb-1">GROUND TRACE (WGS84 PROJECTION)</div>
@@ -160,9 +181,28 @@ export default function TelemetryDashboard() {
             <span className="text-yellow-500 text-3xl font-bold tracking-wider">{velocityKms}</span>
           </div>
 
-          <div className="flex flex-col items-center">
-            <span className="text-gray-500 text-xs tracking-widest mb-1">AZIMUTH (deg)</span>
-            <span className="text-white text-3xl font-bold tracking-wider">{azimuthDeg}</span>
+          <div className="flex flex-col items-center relative">
+            <span className="text-gray-500 text-xs tracking-widest mb-1">HEADING (deg)</span>
+            
+            {/* SVG Directional Dial */}
+            <div className="relative w-16 h-16 flex items-center justify-center mb-1">
+              <svg width="64" height="64" viewBox="0 0 100 100" className="absolute">
+                <circle cx="50" cy="50" r="45" fill="none" stroke="#1f2937" strokeWidth="4" />
+                {/* Compass ticks */}
+                <line x1="50" y1="5" x2="50" y2="15" stroke="#4b5563" strokeWidth="2" />
+                <line x1="50" y1="85" x2="50" y2="95" stroke="#4b5563" strokeWidth="2" />
+                <line x1="5" y1="50" x2="15" y2="50" stroke="#4b5563" strokeWidth="2" />
+                <line x1="85" y1="50" x2="95" y2="50" stroke="#4b5563" strokeWidth="2" />
+                
+                {/* Rotating Needle */}
+                <g style={{ transform: `rotate(${data.yaw}deg)`, transformOrigin: '50px 50px', transition: 'transform 0.1s linear' }}>
+                  <polygon points="50,10 60,50 50,45 40,50" fill="#22c55e" />
+                  <polygon points="50,90 55,50 50,45 45,50" fill="#374151" />
+                </g>
+              </svg>
+            </div>
+
+            <span className="text-white text-2xl font-bold tracking-wider">{azimuthDeg}</span>
           </div>
 
         </div>

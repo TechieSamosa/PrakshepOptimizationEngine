@@ -32,11 +32,6 @@ namespace aerodynamics {
  */
 double get_drag_coefficient(double mach, const RocketConfig& config);
 
-struct GridFinConfig {
-    double area = 0.0;
-    double max_angle = 0.0; // Max deployment angle
-    bool deployed = false;
-};
 
 /**
  * @brief Compute the aerodynamic drag force vector in ECI.

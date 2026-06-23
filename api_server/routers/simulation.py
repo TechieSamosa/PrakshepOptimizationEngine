@@ -35,12 +35,12 @@ async def start_sim(config: Optional[MissionConfig] = None):
             "PSLV-XL": 0,
             "GSLV-MK2": 1,
             "LVM3": 2,
-            "FALCON-9": 2, # Map Falcon 9 to Heavy
+            "FALCON-9": 2, # Map Falcon 9 to Heavy (LVM3) for physics
             "AGNIBAAN": 0, 
-            "SSLV": 0,
-            "HSLV": 1,
-            "NGLV": 2,
-            "VIKRAM": 0
+            "SSLV": 3,
+            "HSLV": 4,
+            "NGLV": 5,
+            "VIKRAM": 6
         }
         rtype_val = v_map.get(config.vehicle.upper(), 0)
         rtype = prakshep_core.RocketType(rtype_val)

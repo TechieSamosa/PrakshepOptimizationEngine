@@ -93,6 +93,7 @@ private:
     double override_gimbal_pitch_ = 0.0;   ///< Override pitch gimbal (radians)
     double override_gimbal_yaw_   = 0.0;   ///< Override yaw gimbal (radians)
     double override_throttle_     = 1.0;   ///< Override throttle [0, 1]
+    bool   is_pad_3_              = false; ///< True if launching from Kulashekarapatnam Pad 3
 
     /**
      * @brief Compute the target pitch angle from the pre-programmed schedule.

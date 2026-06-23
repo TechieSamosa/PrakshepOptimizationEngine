@@ -30,18 +30,27 @@ void Simulation::reset() {
     Vec3 omega(0.0, 0.0, constants::EARTH_OMEGA);
     state_.velocity = omega.cross(state_.position);
     
-    // Point straight up
-    // Normal to the ellipsoid approximation:
-    Vec3 up = state_.position.normalized(); // Approximation for vertical
-    // Create quaternion that points +Z along 'up'
+    // Base attitude pointing straight up
+    Vec3 up = state_.position.normalized();
     Vec3 z_axis(0, 0, 1);
     Vec3 axis = z_axis.cross(up);
     double angle = std::acos(z_axis.dot(up));
+    Quaternion up_att = Quaternion::identity();
     if (axis.norm_squared() > 1e-12) {
-        state_.attitude = Quaternion::from_axis_angle(axis.normalized(), angle);
-    } else {
-        state_.attitude = Quaternion::identity();
+        up_att = Quaternion::from_axis_angle(axis.normalized(), angle);
     }
+    
+    // Kulashekarapatnam Pad 3 Check & Azimuth Initialization
+    double azimuth_deg = constants::LAUNCH_AZIMUTH_POLAR; // Default 140 deg (dogleg)
+    
+    // Check if launch site is Pad 3 (Kulashekarapatnam is roughly ~8.36 N)
+    if (constants::LAUNCH_LATITUDE < 10.0) { 
+        azimuth_deg = 180.0; // Direct South Polar Trajectory
+    }
+    
+    // Apply launch azimuth rotation around the Z (up) axis
+    Quaternion az_rot = Quaternion::from_euler(0.0, 0.0, azimuth_deg * constants::DEG_TO_RAD);
+    state_.attitude = up_att * az_rot;
     
     state_.angular_velocity = Vec3(0, 0, 0);
     state_.mass = config_.total_mass();

@@ -13,6 +13,67 @@ function Rocket() {
   const missionConfig = useTelemetryStore((state) => state.missionConfig);
   const vehicle = missionConfig?.vehicle || 'PSLV-XL';
   const stage = data ? data.current_stage : 0;
+  const altitude = data ? data.altitude : 0;
+  const isFairingSeparated = altitude > 110000;
+
+  // Track dropped stages for procedural tumbling
+  const prevStageRef = useRef(stage);
+  const [debris, setDebris] = useState<any[]>([]);
+
+  useEffect(() => {
+    // Reset on new flight
+    if (stage === 0 && prevStageRef.current > 0) {
+      setDebris([]);
+      prevStageRef.current = 0;
+    }
+    
+    // Stage separation event
+    if (stage > prevStageRef.current) {
+      setDebris(prev => [...prev, {
+        id: `stage-${prevStageRef.current}`,
+        type: 'stage',
+        position: new THREE.Vector3(0, -15, 0),
+        rotation: new THREE.Vector3(Math.random(), Math.random(), Math.random()),
+        velocity: new THREE.Vector3((Math.random() - 0.5) * 5, -20, (Math.random() - 0.5) * 5),
+        rotVelocity: new THREE.Vector3(Math.random() * 2 - 1, Math.random() * 2 - 1, Math.random() * 2 - 1)
+      }]);
+      prevStageRef.current = stage;
+    }
+  }, [stage]);
+
+  useEffect(() => {
+    if (isFairingSeparated && !debris.find(d => d.type === 'fairing_left')) {
+      // Spawn fairing halves
+      setDebris(prev => [
+        ...prev,
+        {
+          id: 'fairing_left',
+          type: 'fairing_left',
+          position: new THREE.Vector3(-2, 12, 0),
+          rotation: new THREE.Vector3(0, 0, 0),
+          velocity: new THREE.Vector3(-10, -5, 0),
+          rotVelocity: new THREE.Vector3(0, 0, 2)
+        },
+        {
+          id: 'fairing_right',
+          type: 'fairing_right',
+          position: new THREE.Vector3(2, 12, 0),
+          rotation: new THREE.Vector3(0, 0, 0),
+          velocity: new THREE.Vector3(10, -5, 0),
+          rotVelocity: new THREE.Vector3(0, 0, -2)
+        }
+      ]);
+    }
+  }, [isFairingSeparated, debris]);
+
+  // Update debris physics relative to rocket
+  useFrame((_, delta) => {
+    setDebris(prev => prev.map(d => {
+      d.position.addScaledVector(d.velocity, delta);
+      d.rotation.addScaledVector(d.rotVelocity, delta);
+      return d;
+    }));
+  });
 
   // Update rocket attitude (pitch, yaw, roll)
   useFrame(() => {
@@ -48,10 +109,12 @@ function Rocket() {
             </mesh>
           )}
           {/* Fairing */}
-          <mesh position={[0, 12, 0]}>
-            <coneGeometry args={[1.4, 4, 32]} />
-            <meshStandardMaterial color="#ffffff" roughness={0.2} metalness={0.1} />
-          </mesh>
+          {!isFairingSeparated && (
+            <mesh position={[0, 12, 0]}>
+              <coneGeometry args={[1.4, 4, 32]} />
+              <meshStandardMaterial color="#ffffff" roughness={0.2} metalness={0.1} />
+            </mesh>
+          )}
           
           {/* PSLV-XL 6 Strap-on solid boosters (Drop at stage 1) */}
           {vehicle === 'PSLV-XL' && stage === 0 && [0, 60, 120, 180, 240, 300].map((angle, i) => {
@@ -87,10 +150,12 @@ function Rocket() {
             </mesh>
           )}
           {/* Massive Fairing */}
-          <mesh position={[0, 13, 0]}>
-            <coneGeometry args={[2.5, 6, 32]} />
-            <meshStandardMaterial color="#ffffff" roughness={0.2} metalness={0.1} />
-          </mesh>
+          {!isFairingSeparated && (
+            <mesh position={[0, 13, 0]}>
+              <coneGeometry args={[2.5, 6, 32]} />
+              <meshStandardMaterial color="#ffffff" roughness={0.2} metalness={0.1} />
+            </mesh>
+          )}
           
           {/* Two massive solid strap-ons (S200) */}
           {stage === 0 && [-1, 1].map((side, i) => (
@@ -122,10 +187,12 @@ function Rocket() {
             <cylinderGeometry args={[1.85, 1.85, 5, 32]} />
             <meshStandardMaterial color="#ffffff" roughness={0.2} metalness={0.2} />
           </mesh>
-          <mesh position={[0, 15, 0]}>
-            <coneGeometry args={[1.85, 5, 32]} />
-            <meshStandardMaterial color="#ffffff" roughness={0.2} metalness={0.2} />
-          </mesh>
+          {!isFairingSeparated && (
+            <mesh position={[0, 15, 0]}>
+              <coneGeometry args={[1.85, 5, 32]} />
+              <meshStandardMaterial color="#ffffff" roughness={0.2} metalness={0.2} />
+            </mesh>
+          )}
         </>
       )}
 
@@ -135,6 +202,28 @@ function Rocket() {
           <Sparkles count={stage === 0 ? 800 : 300} scale={[stage === 0 ? 4 : 2, 15, stage === 0 ? 4 : 2]} size={20} speed={2} opacity={0.8} color={stage === 0 ? "#FFD700" : "#4444FF"} />
         </points>
       </group>
+
+      {/* Procedural Tumbling Debris */}
+      {debris.map(d => (
+        <group 
+          key={d.id} 
+          position={d.position.toArray()} 
+          rotation={[d.rotation.x, d.rotation.y, d.rotation.z]}
+        >
+          {d.type === 'stage' && (
+            <mesh>
+              <cylinderGeometry args={[1.8, 1.8, 15, 16]} />
+              <meshStandardMaterial color="#555555" metalness={0.5} roughness={0.8} />
+            </mesh>
+          )}
+          {d.type.startsWith('fairing') && (
+            <mesh>
+              <coneGeometry args={[2.5, 6, 16, 1, false, 0, Math.PI]} />
+              <meshStandardMaterial color="#cccccc" side={THREE.DoubleSide} />
+            </mesh>
+          )}
+        </group>
+      ))}
     </group>
   );
 }
@@ -176,7 +265,7 @@ function AtmosphericLighting() {
 
 export default function RocketScene() {
   return (
-    <div className="w-full h-full bg-black relative">
+    <div className="absolute inset-0 bg-black pointer-events-auto" style={{ zIndex: 0 }}>
       <Canvas shadows camera={{ position: [0, 0, 40], fov: 45 }}>
         <AtmosphericLighting />
         <Rocket />

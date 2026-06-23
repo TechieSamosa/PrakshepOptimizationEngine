@@ -348,9 +348,13 @@ struct Quaternion {
  * @brief Supported ISRO launch vehicle variants.
  */
 enum class RocketType {
-    PSLV_XL,    ///< Polar Satellite Launch Vehicle — XL variant (6 strap-on boosters)
-    GSLV_MK2,   ///< Geosynchronous Satellite Launch Vehicle — Mk II (cryo upper stage)
-    LVM3         ///< Launch Vehicle Mark 3 (formerly GSLV Mk III, heavy-lift)
+    PSLV_XL,    ///< Polar Satellite Launch Vehicle — XL variant
+    GSLV_MK2,   ///< Geosynchronous Satellite Launch Vehicle — Mk II
+    LVM3,       ///< Launch Vehicle Mark 3 (formerly GSLV Mk III)
+    SSLV,       ///< Small Satellite Launch Vehicle (ISRO)
+    HSLV,       ///< Heavy Satellite Launch Vehicle (ISRO concept)
+    NGLV,       ///< Next Gen Launch Vehicle (ISRO reusable)
+    VIKRAM      ///< Skyroot Vikram I
 };
 
 /**
@@ -419,6 +423,12 @@ struct StageConfig {
 //  RocketConfig — complete vehicle configuration
 // ============================================================================
 
+struct GridFinConfig {
+    double area = 0.0;
+    double max_angle = 0.0; // Max deployment angle
+    bool deployed = false;
+};
+
 /**
  * @struct RocketConfig
  * @brief  Complete launch vehicle configuration: stages, payload, and aerodynamics.
@@ -436,6 +446,8 @@ struct RocketConfig {
     double fairing_mass   = 0.0;        ///< Fairing mass (kg)
     double reference_area = 0.0;        ///< Vehicle aerodynamic reference area (m²)
     double total_height   = 0.0;        ///< Vehicle height (m), used for visualisation
+    
+    GridFinConfig grid_fins;            ///< Grid fin configuration for reusable vehicles
 
     // Piecewise-linear drag model: Cd = f(Mach)
     std::vector<double> mach_breakpoints; ///< Mach number breakpoints (ascending)

@@ -45,7 +45,14 @@ export const useTelemetryStore = create<TelemetryState>((set) => {
     set({ status, isConnected: status === 'CONNECTED' });
   });
 
-  wsClient.addMessageHandler((data: TelemetryFrame) => {
+  wsClient.addMessageHandler((msg: any) => {
+    // Flatten the new nested schema from the backend
+    const data: TelemetryFrame = {
+      ...(msg.raw || {}),
+      ...(msg.analysed || {}),
+      ...(msg.events || {})
+    };
+
     set((state) => {
       // Keep last 600 frames (10 seconds at 60Hz) or whatever is needed for full flight. 
       // For a 3 minute flight at 60Hz = 10,800 frames. We'll store all to show the full path.
